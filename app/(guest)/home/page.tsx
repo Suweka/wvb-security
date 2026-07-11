@@ -166,7 +166,7 @@ export default function HomePage() {
           >
             <div>
               <div className="text-3xl font-heading font-bold text-white">
-                <CountUp end={100} suffix="+" />
+                <CountUp end={10} suffix="+" />
               </div>
               <div className="text-xs uppercase tracking-widest text-gray-300 mt-1">Years of Heritage</div>
             </div>
