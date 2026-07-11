@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard,
@@ -14,33 +14,56 @@ import {
   CalendarRange,
   DollarSign,
   Star,
+  ConciergeBell,
   Settings,
   Mail,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
+import { getAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
 
 export const AdminSidebar = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [messagesUnread, setMessagesUnread] = useState(0);
 
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setUser(getAdminUser());
+    fetch('/api/admin/notifications')
+      .then(res => res.json())
+      .then(data => setMessagesUnread(data.messagesUnread || 0))
+      .catch(() => {});
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      clearAuth();
+      router.push('/admin/login');
+    }
+  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Calendar, label: 'Reservation', href: '/admin/reservations' },
     { icon: Bed, label: 'Rooms', href: '/admin/rooms' },
     { icon: Users, label: 'Guests', href: '/admin/guests' },
-    { icon: MessageSquare, label: 'Messages', href: '/admin/messages', badge: 3 },
+    { icon: MessageSquare, label: 'Messages', href: '/admin/messages', badge: messagesUnread || undefined },
     { icon: Package, label: 'Housekeeping', href: '/admin/housekeeping' },
     { icon: CalendarRange, label: 'Calendar', href: '/admin/calendar' },
     { icon: DollarSign, label: 'Financials', href: '/admin/financials' },
     { icon: Star, label: 'Reviews', href: '/admin/reviews' },
-    { icon: Settings, label: 'Concierge', href: '/admin/concierge' },
+    { icon: ConciergeBell, label: 'Concierge', href: '/admin/concierge' },
     { icon: Mail, label: 'Newsletter', href: '/admin/newsletter' },
+    { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 
   return (
@@ -122,11 +145,11 @@ export const AdminSidebar = () => {
               className="rounded-full object-cover"
             />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm">Jaylan Dorwart</h4>
-              <p className="text-xs text-gray-500">Admin</p>
+              <h4 className="font-semibold text-sm">{user?.name || 'Admin'}</h4>
+              <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
             </div>
           </div>
-          <button className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
             <LogOut size={18} />
             <span>Logout</span>
           </button>
