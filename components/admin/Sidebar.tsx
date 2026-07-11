@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard,
@@ -17,14 +17,12 @@ import {
   ConciergeBell,
   Settings,
   Mail,
-  LogOut,
   Menu,
   X,
 } from 'lucide-react';
-import { getAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
+import { getAdminUser, type AdminUser } from '@/lib/auth';
 
 export const AdminSidebar = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -41,15 +39,6 @@ export const AdminSidebar = () => {
       .then(data => setMessagesUnread(data.messagesUnread || 0))
       .catch(() => {});
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } finally {
-      clearAuth();
-      router.push('/admin/login');
-    }
-  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
@@ -134,9 +123,9 @@ export const AdminSidebar = () => {
           </ul>
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile (logout lives in the top navbar) */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             <Image
               src="/images/avatars/admin.jpg"
               alt="Admin User"
@@ -149,10 +138,6 @@ export const AdminSidebar = () => {
               <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
         </div>
       </aside>
     </>
