@@ -75,6 +75,32 @@
     --font-poppins: 'Poppins';
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Branded text selection */
+  ::selection {
+    background: rgb(32 143 106 / 0.9);
+    color: #fff;
+  }
+
+  /* Slim branded scrollbar (WebKit) */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f4;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(32 143 106 / 0.55);
+    border-radius: 8px;
+    border: 2px solid #f1f5f4;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(32 143 106 / 0.85);
+  }
+
   * {
     @apply border-gray-200;
   }
@@ -117,6 +143,30 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Cinematic slow zoom for hero backgrounds */
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+.animate-kenburns {
+  animation: kenburns 22s ease-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-kenburns {
+    animation: none;
   }
 }
 

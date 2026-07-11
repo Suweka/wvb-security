@@ -1,7 +1,7 @@
 // components/guest/Navbar.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, Phone, Mail, User, LogOut, ChevronDown, Settings } from 'lucide-react'
@@ -13,6 +13,14 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const navLinks = [
     { href: '/home', label: 'Home' },
@@ -43,8 +51,14 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {/* Main Navbar */}
-      <nav className="bg-white shadow-md sticky top-0 z-50">
+      {/* Main Navbar — frosted glass once scrolled */}
+      <nav
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/80 backdrop-blur-lg shadow-lg'
+            : 'bg-white shadow-md'
+        }`}
+      >
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
