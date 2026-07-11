@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, Filter, TrendingUp, TrendingDown, DollarSign, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Download, TrendingUp, DollarSign, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { getFinancialsData } from '@/lib/admin-actions';
 
 interface FinancialData {
@@ -95,7 +95,10 @@ export default function FinancialsPage() {
           <button onClick={fetchData} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
             <RefreshCw size={14} /> Refresh
           </button>
-          <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
+          <button
+            onClick={() => { window.location.href = '/api/admin/financials/export'; }}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+          >
             <Download size={20} />
             <span>Export Report</span>
           </button>

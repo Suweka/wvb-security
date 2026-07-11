@@ -1,7 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Mail, Phone, MapPin, Calendar, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, Suspense } from 'react';
+import {
+  Search, Plus, Eye, Mail, Phone, MapPin, Calendar,
+  Loader2, AlertCircle, RefreshCw, XCircle,
+} from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { getGuestsData } from '@/lib/admin-actions';
 
 interface Guest {
@@ -17,12 +21,53 @@ interface Guest {
   type: 'registered' | 'guest';
 }
 
-export default function GuestsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+interface BookingDetail {
+  bookingNumber: string;
+  room: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  amount: number;
+  status: string;
+  paymentMethod: string;
+}
+
+interface GuestDetail {
+  name: string;
+  email: string;
+  phone: string;
+  country: string;
+  type: 'registered' | 'guest';
+  joinDate: string;
+}
+
+interface AddForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+}
+
+function GuestsContent() {
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [filterType, setFilterType] = useState<'all' | 'registered' | 'guest'>('all');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Detail modal state
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [detailData, setDetailData] = useState<{ guest: GuestDetail; bookings: BookingDetail[] } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Add guest modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState<AddForm>({ firstName: '', lastName: '', email: '', phone: '', country: '' });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   async function fetchGuests() {
     setLoading(true);
@@ -37,6 +82,57 @@ export default function GuestsPage() {
   }
 
   useEffect(() => { fetchGuests(); }, []);
+
+  async function openDetail(guest: Guest) {
+    setSelectedGuest(guest);
+    setDetailData(null);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/admin/guests/${guest.id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setDetailData(json);
+      }
+    } catch {
+      // leave detailData null — show error in modal
+    }
+    setDetailLoading(false);
+  }
+
+  function closeDetail() {
+    setSelectedGuest(null);
+    setDetailData(null);
+  }
+
+  async function handleAddGuest(e: React.FormEvent) {
+    e.preventDefault();
+    setAddError('');
+    if (!addForm.firstName || !addForm.lastName || !addForm.email) {
+      setAddError('First name, last name, and email are required.');
+      return;
+    }
+    setAddLoading(true);
+    try {
+      const res = await fetch('/api/admin/guests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setAddError(json.error ?? 'Failed to add guest.');
+      } else {
+        setShowAddModal(false);
+        setAddForm({ firstName: '', lastName: '', email: '', phone: '', country: '' });
+        setSuccessMsg('Guest added successfully.');
+        setTimeout(() => setSuccessMsg(''), 4000);
+        fetchGuests();
+      }
+    } catch {
+      setAddError('Network error. Please try again.');
+    }
+    setAddLoading(false);
+  }
 
   const filteredGuests = guests.filter((guest) => {
     const matchesSearch =
@@ -79,6 +175,13 @@ export default function GuestsPage() {
         </button>
       </div>
 
+      {/* Success message */}
+      {successMsg && (
+        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+          {successMsg}
+        </div>
+      )}
+
       {/* Controls */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -104,7 +207,10 @@ export default function GuestsPage() {
                 <option value="guest">Guest Checkout</option>
               </select>
             </div>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
+            <button
+              onClick={() => { setShowAddModal(true); setAddError(''); }}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+            >
               <Plus size={20} />
               <span className="hidden sm:inline">Add Guest</span>
             </button>
@@ -140,7 +246,11 @@ export default function GuestsPage() {
                     </span>
                   </div>
                 </div>
-                <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" title="View Details">
+                <button
+                  onClick={() => openDetail(guest)}
+                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                  title="View Details"
+                >
                   <Eye size={18} />
                 </button>
               </div>
@@ -212,6 +322,248 @@ export default function GuestsPage() {
           <p className="text-3xl font-bold text-primary">LKR {totalRevenue.toLocaleString()}</p>
         </div>
       </div>
+
+      {/* ── View Detail Modal ── */}
+      {selectedGuest && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Guest Details</h2>
+              <button onClick={closeDetail} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {detailLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="animate-spin text-primary" size={36} />
+                </div>
+              ) : !detailData ? (
+                <div className="text-center py-12 text-gray-500">
+                  <AlertCircle className="mx-auto mb-2 text-red-400" size={32} />
+                  <p>Failed to load guest details.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Guest info card */}
+                  <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center text-white font-bold text-xl">
+                        {detailData.guest.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{detailData.guest.name}</h3>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          detailData.guest.type === 'registered' ? 'bg-primary-light text-primary' : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {detailData.guest.type === 'registered' ? 'Registered User' : 'Guest Checkout'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                      {detailData.guest.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail size={15} className="text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{detailData.guest.email}</span>
+                        </div>
+                      )}
+                      {detailData.guest.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={15} className="text-gray-400 flex-shrink-0" />
+                          <span>{detailData.guest.phone}</span>
+                        </div>
+                      )}
+                      {detailData.guest.country && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={15} className="text-gray-400 flex-shrink-0" />
+                          <span>{detailData.guest.country}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Calendar size={15} className="text-gray-400 flex-shrink-0" />
+                        <span>Joined {new Date(detailData.guest.joinDate).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bookings table */}
+                  <h4 className="font-semibold mb-3">Booking History ({detailData.bookings.length})</h4>
+                  {detailData.bookings.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">No bookings yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Booking Ref</th>
+                            <th className="px-4 py-3 text-left">Room</th>
+                            <th className="px-4 py-3 text-left">Check-in → Check-out</th>
+                            <th className="px-4 py-3 text-right">Amount</th>
+                            <th className="px-4 py-3 text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {detailData.bookings.map((b) => (
+                            <tr key={b.bookingNumber} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 font-mono text-xs text-gray-700">{b.bookingNumber}</td>
+                              <td className="px-4 py-3 text-gray-700">{b.room}</td>
+                              <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                                {new Date(b.checkIn).toLocaleDateString()} → {new Date(b.checkOut).toLocaleDateString()}
+                                <span className="ml-1 text-gray-400">({b.nights}n)</span>
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">LKR {b.amount.toLocaleString()}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                                  b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                  'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {b.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Totals */}
+                  {detailData.bookings.length > 0 && (
+                    <div className="flex gap-6 mt-4 pt-4 border-t text-sm">
+                      <div>
+                        <span className="text-gray-500">Total stays: </span>
+                        <span className="font-semibold">{detailData.bookings.length}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Total spent: </span>
+                        <span className="font-semibold text-primary">
+                          LKR {detailData.bookings.reduce((s, b) => s + b.amount, 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="px-6 pb-6 flex justify-end">
+              <button
+                onClick={closeDetail}
+                className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Guest Modal ── */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Add Guest</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleAddGuest} className="p-6 space-y-4">
+              {addError && (
+                <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                  {addError}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addForm.firstName}
+                    onChange={(e) => setAddForm(f => ({ ...f, firstName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    placeholder="Jane"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addForm.lastName}
+                    onChange={(e) => setAddForm(f => ({ ...f, lastName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={addForm.phone}
+                  onChange={(e) => setAddForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  placeholder="+94 77 000 0000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <input
+                  type="text"
+                  value={addForm.country}
+                  onChange={(e) => setAddForm(f => ({ ...f, country: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  placeholder="Sri Lanka"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addLoading}
+                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {addLoading && <Loader2 size={16} className="animate-spin" />}
+                  {addLoading ? 'Adding…' : 'Add Guest'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function GuestsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+      <GuestsContent />
+    </Suspense>
   );
 }

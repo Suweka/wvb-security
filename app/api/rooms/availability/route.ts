@@ -46,14 +46,17 @@ export async function POST(request: NextRequest) {
     // Expand each booking into individual dates (checkIn inclusive, checkOut exclusive)
     const unavailableSet = new Set<string>();
 
+    const toLocalKey = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
     for (const booking of bookings) {
-      const cur = new Date(booking.checkIn);
-      const end = new Date(booking.checkOut);
-      cur.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
+      // Parse stored UTC midnight dates as local dates to match what the calendar renders
+      const checkInStr  = booking.checkIn.toISOString().split('T')[0];
+      const checkOutStr = booking.checkOut.toISOString().split('T')[0];
+      const cur = new Date(checkInStr + 'T00:00:00');
+      const end = new Date(checkOutStr + 'T00:00:00');
       while (cur < end) {
-        // Format as YYYY-MM-DD in UTC to match how we stored the dates
-        unavailableSet.add(cur.toISOString().split('T')[0]);
+        unavailableSet.add(toLocalKey(cur));
         cur.setDate(cur.getDate() + 1);
       }
     }

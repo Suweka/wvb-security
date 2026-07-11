@@ -1,307 +1,286 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Filter, Star, Trash2, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Star, Trash2, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
+import { getReviewsData } from '@/lib/admin-actions';
+import GoogleReviewsWidget from '@/components/GoogleReviewsWidget';
 
-type ReviewRating = 5 | 4 | 3 | 2 | 1;
+type ReviewRating = 1 | 2 | 3 | 4 | 5;
 
 interface Review {
   id: string;
   guestName: string;
   rating: ReviewRating;
-  date: string;
   comment: string;
   room: string;
-  verified: boolean;
-  helpful: number;
-  notHelpful: number;
-  response?: string;
-  responseDate?: string;
+  createdAt: string;
+}
+
+function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star key={i} size={size} className={i <= rating ? 'fill-accent text-accent' : 'text-gray-300'} />
+      ))}
+    </div>
+  );
 }
 
 export default function ReviewsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRating, setFilterRating] = useState<'all' | ReviewRating>(5);
-  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
-  const [responseText, setResponseText] = useState('');
+  const [activeTab, setActiveTab]       = useState<'internal' | 'google'>('internal');
+  const [reviews, setReviews]           = useState<Review[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(false);
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [filterRating, setFilterRating] = useState<'all' | ReviewRating>('all');
+  const [selected, setSelected]         = useState<Review | null>(null);
+  const [deleting, setDeleting]         = useState(false);
+  const [actionMsg, setActionMsg]       = useState('');
 
-  const reviews: Review[] = [
-    {
-      id: 'REV001',
-      guestName: 'Sarah Johnson',
-      rating: 5,
-      date: '2025-12-13',
-      comment: 'Absolutely stunning room with incredible views. The bed was so comfortable and the staff was amazing! Will definitely come back.',
-      room: 'Deluxe Room 101',
-      verified: true,
-      helpful: 24,
-      notHelpful: 2,
-      response: 'Thank you for your wonderful review! We look forward to welcoming you again soon.',
-      responseDate: '2025-12-14',
-    },
-    {
-      id: 'REV002',
-      guestName: 'Michael Chen',
-      rating: 5,
-      date: '2025-12-11',
-      comment: 'Best hotel experience in Nuwara Eliya. The room was spotless and had everything we needed. Highly recommend!',
-      room: 'Junior Suite 202',
-      verified: true,
-      helpful: 18,
-      notHelpful: 1,
-    },
-    {
-      id: 'REV003',
-      guestName: 'Emma Wilson',
-      rating: 4,
-      date: '2025-12-10',
-      comment: 'Beautiful colonial charm with modern comforts. Great location with stunning views. Only minor issue was water pressure.',
-      room: 'Family Room 303',
-      verified: true,
-      helpful: 12,
-      notHelpful: 3,
-    },
-    {
-      id: 'REV004',
-      guestName: 'David Brown',
-      rating: 3,
-      date: '2025-12-08',
-      comment: 'Good stay overall. Room was nice but a bit noisy from adjacent rooms. Could use better soundproofing.',
-      room: 'Deluxe Room 104',
-      verified: true,
-      helpful: 8,
-      notHelpful: 5,
-    },
-    {
-      id: 'REV005',
-      guestName: 'Lisa Anderson',
-      rating: 2,
-      date: '2025-12-05',
-      comment: 'The room was okay but breakfast was disappointing. WiFi was unreliable throughout the stay.',
-      room: 'Standard Room 105',
-      verified: true,
-      helpful: 10,
-      notHelpful: 2,
-    },
-  ];
+  const fetchReviews = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    const data = await getReviewsData();
+    if (data) setReviews(data);
+    else setError(true);
+    setLoading(false);
+  }, []);
 
-  const filteredReviews = reviews.filter((review) => {
-    const matchesSearch =
-      review.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
-    const matchesFilter = filterRating === 'all' || review.rating === filterRating;
+  async function handleDelete() {
+    if (!selected) return;
+    if (!confirm('Delete this review permanently?')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/reviews/${selected.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setReviews(prev => prev.filter(r => r.id !== selected.id));
+      setSelected(null);
+      setActionMsg('Review deleted.');
+    } catch {
+      setActionMsg('Failed to delete review.');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
-    return matchesSearch && matchesFilter;
+  const filtered = reviews.filter(r => {
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      r.guestName.toLowerCase().includes(q) ||
+      r.comment.toLowerCase().includes(q) ||
+      r.room.toLowerCase().includes(q);
+    const matchFilter = filterRating === 'all' || r.rating === Number(filterRating);
+    return matchSearch && matchFilter;
   });
 
-  const averageRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
-  const ratingDistribution = {
-    5: reviews.filter(r => r.rating === 5).length,
-    4: reviews.filter(r => r.rating === 4).length,
-    3: reviews.filter(r => r.rating === 3).length,
-    2: reviews.filter(r => r.rating === 2).length,
-    1: reviews.filter(r => r.rating === 1).length,
-  };
+  const avgRating = reviews.length
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : '—';
 
-  const renderStars = (rating: ReviewRating) => {
-    return [...Array(5)].map((_, i) => (
-      <Star
-        key={i}
-        size={16}
-        className={i < rating ? 'fill-accent text-accent' : 'text-gray-300'}
-      />
-    ));
-  };
+  const dist = [5, 4, 3, 2, 1].map(n => ({
+    n,
+    count: reviews.filter(r => r.rating === n).length,
+  }));
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="animate-spin text-primary" size={48} />
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <AlertCircle className="text-red-500" size={40} />
+      <p className="text-gray-600">Failed to load reviews.</p>
+      <button onClick={fetchReviews} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
+    </div>
+  );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-2">Reviews</h1>
-        <p className="text-gray-600">Manage guest reviews and ratings</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-heading font-bold mb-2">Reviews</h1>
+          <p className="text-gray-600">Manage guest reviews and ratings</p>
+        </div>
+        <button onClick={fetchReviews} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+          <RefreshCw size={14} /> Refresh
+        </button>
       </div>
 
-      {/* Rating Summary */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Overall Rating */}
-          <div className="text-center">
-            <div className="text-5xl font-bold text-primary mb-2">{averageRating}</div>
-            <div className="flex justify-center gap-1 mb-2">
-              {renderStars(Math.round(parseFloat(averageRating)) as ReviewRating)}
-            </div>
-            <p className="text-sm text-gray-600">{reviews.length} reviews</p>
-          </div>
+      {/* Tab bar */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('internal')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            activeTab === 'internal'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          Internal Reviews
+        </button>
+        <button
+          onClick={() => setActiveTab('google')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+            activeTab === 'google'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Google Reviews
+        </button>
+      </div>
 
-          {/* Rating Distribution */}
-          <div className="md:col-span-2 space-y-2">
-            {[5, 4, 3, 2, 1].map((rating) => (
-              <div key={rating} className="flex items-center gap-2">
-                <div className="flex gap-1 w-16">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      size={12}
-                      className={i < rating ? 'fill-accent text-accent' : 'text-gray-300'}
+      {activeTab === 'google' && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <p className="text-sm text-gray-500 mb-6">Live reviews pulled from your Google Business Profile via Elfsight.</p>
+          <GoogleReviewsWidget />
+        </div>
+      )}
+
+      {activeTab === 'internal' && actionMsg && !selected && (
+        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-300 rounded-lg text-sm text-green-800">
+          {actionMsg}
+        </div>
+      )}
+
+      {activeTab === 'internal' && <>
+      {/* Rating Summary */}
+      {reviews.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-5xl font-bold text-primary mb-2">{avgRating}</div>
+              <Stars rating={Math.round(parseFloat(avgRating))} size={20} />
+              <p className="text-sm text-gray-600 mt-2">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              {dist.map(({ n, count }) => (
+                <div key={n} className="flex items-center gap-2">
+                  <Stars rating={n} size={12} />
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-accent h-2 rounded-full transition-all"
+                      style={{ width: reviews.length ? `${(count / reviews.length) * 100}%` : '0%' }}
                     />
-                  ))}
+                  </div>
+                  <span className="text-sm font-semibold w-6 text-right">{count}</span>
                 </div>
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-accent h-2 rounded-full"
-                    style={{ width: `${(ratingDistribution[rating as keyof typeof ratingDistribution] / reviews.length) * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-semibold w-8">
-                  {ratingDistribution[rating as keyof typeof ratingDistribution]}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Controls */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by guest name or review content"
+              placeholder="Search by guest, room, or content"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-
           <select
             value={filterRating}
-            onChange={(e) => setFilterRating(e.target.value as 'all' | ReviewRating)}
+            onChange={e => setFilterRating(e.target.value === 'all' ? 'all' : Number(e.target.value) as ReviewRating)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">All Ratings</option>
-            <option value="5">5 Stars</option>
-            <option value="4">4 Stars</option>
-            <option value="3">3 Stars</option>
-            <option value="2">2 Stars</option>
-            <option value="1">1 Star</option>
+            {[5, 4, 3, 2, 1].map(n => (
+              <option key={n} value={n}>{n} Star{n !== 1 ? 's' : ''}</option>
+            ))}
           </select>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Reviews List */}
+        {/* List */}
         <div className="lg:col-span-2 space-y-4">
-          {filteredReviews.map((review) => (
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-md">
+              <p className="text-gray-500">
+                {reviews.length === 0
+                  ? 'No reviews yet. Reviews submitted by guests will appear here.'
+                  : 'No reviews match your search.'}
+              </p>
+            </div>
+          ) : filtered.map(review => (
             <div
               key={review.id}
-              onClick={() => setSelectedReview(review)}
-              className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => { setSelected(review); setActionMsg(''); }}
+              className={`bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow ${selected?.id === review.id ? 'ring-2 ring-primary' : ''}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold">{review.guestName}</h3>
-                  <p className="text-sm text-gray-600">{review.room}</p>
+                  <p className="text-sm text-gray-500">{review.room}</p>
                 </div>
-                {review.verified && (
-                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
-                    Verified
-                  </span>
-                )}
+                <span className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
               </div>
-
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex gap-1">{renderStars(review.rating)}</div>
-                <span className="text-sm text-gray-500">{new Date(review.date).toLocaleDateString()}</span>
+              <div className="mb-3">
+                <Stars rating={review.rating} />
               </div>
-
-              <p className="text-gray-700 mb-3">{review.comment}</p>
-
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <ThumbsUp size={16} />
-                  <span>{review.helpful}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ThumbsDown size={16} />
-                  <span>{review.notHelpful}</span>
-                </div>
-              </div>
-
-              {review.response && (
-                <div className="mt-4 pt-4 border-t bg-gray-50 p-3 rounded-lg">
-                  <p className="text-xs text-gray-600 font-medium mb-1">Your Response</p>
-                  <p className="text-sm text-gray-700">{review.response}</p>
-                </div>
+              {review.comment && (
+                <p className="text-gray-700 text-sm line-clamp-2">{review.comment}</p>
               )}
             </div>
           ))}
-
-          {filteredReviews.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No reviews found</p>
-            </div>
-          )}
         </div>
 
-        {/* Review Detail */}
-        {selectedReview && (
+        {/* Detail Panel */}
+        {selected && (
           <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold">{selectedReview.guestName}</h3>
-              <button
-                onClick={() => setSelectedReview(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
+            <div className="flex items-start justify-between mb-4 pb-4 border-b">
+              <div>
+                <h3 className="text-lg font-semibold">{selected.guestName}</h3>
+                <p className="text-sm text-gray-500">{selected.room}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
               </button>
             </div>
 
             <div className="mb-4">
-              <div className="flex gap-1 mb-2">{renderStars(selectedReview.rating)}</div>
-              <p className="text-sm text-gray-600">{new Date(selectedReview.date).toLocaleDateString()}</p>
+              <Stars rating={selected.rating} size={20} />
+              <p className="text-xs text-gray-500 mt-1">{new Date(selected.createdAt).toLocaleDateString()}</p>
             </div>
 
-            <div className="mb-4 pb-4 border-b">
-              <p className="text-sm font-medium text-gray-700 mb-2">Room</p>
-              <p className="text-gray-700">{selectedReview.room}</p>
-            </div>
-
-            <div className="mb-4 pb-4 border-b">
-              <p className="text-sm font-medium text-gray-700 mb-2">Review</p>
-              <p className="text-gray-700 text-sm">{selectedReview.comment}</p>
-            </div>
-
-            {selectedReview.response ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
-                <p className="text-xs text-green-700 font-medium mb-1">Your Response</p>
-                <p className="text-sm text-green-900">{selectedReview.response}</p>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Write a Response</p>
-                <textarea
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  placeholder="Share your response to this review..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                />
-                <button className="mt-2 w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium">
-                  Post Response
-                </button>
+            {selected.comment && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-700">
+                {selected.comment}
               </div>
             )}
 
-            <button className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2 text-sm">
-              <Trash2 size={16} />
+            {actionMsg && (
+              <p className="text-xs text-center text-gray-600 mb-3">{actionMsg}</p>
+            )}
+
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               Delete Review
             </button>
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

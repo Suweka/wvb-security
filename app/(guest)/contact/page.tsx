@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Twitter, Instagram, Youtube, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -12,11 +12,27 @@ export default function ContactPage() {
     subject: '',
     message: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
+    setSubmitting(true);
+    setSubmitStatus('idle');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error();
+      setSubmitStatus('success');
+      setFormData({ firstName: '', email: '', phone: '', subject: '', message: '' });
+    } catch {
+      setSubmitStatus('error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -178,8 +194,21 @@ export default function ContactPage() {
                 />
               </div>
 
-              <Button type="submit" variant="primary" size="lg" className="w-full">
-                Send Message →
+              {submitStatus === 'success' && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-300 rounded-lg text-green-700 text-sm">
+                  <CheckCircle size={16} />
+                  Message sent! We'll get back to you within 24 hours.
+                </div>
+              )}
+              {submitStatus === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
+                  <AlertCircle size={16} />
+                  Something went wrong. Please try again.
+                </div>
+              )}
+
+              <Button type="submit" variant="primary" size="lg" className="w-full" disabled={submitting}>
+                {submitting ? 'Sending...' : 'Send Message →'}
               </Button>
             </form>
           </div>

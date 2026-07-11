@@ -168,6 +168,7 @@ export async function getReservationsData() {
         email,
         phone,
         room: b.room.name,
+        roomId: b.roomId,
         checkIn: b.checkIn.toISOString().split('T')[0],
         checkOut: b.checkOut.toISOString().split('T')[0],
         nights,
@@ -276,6 +277,48 @@ export async function getHousekeepingData() {
     }));
   } catch (error) {
     console.error('Error fetching housekeeping tasks:', error);
+    return null;
+  }
+}
+
+export async function getCalendarData() {
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { status: { not: 'CANCELLED' } },
+      include: { room: true, user: true, guestCheckout: true },
+      orderBy: { checkIn: 'asc' },
+    });
+
+    return bookings.map(b => ({
+      id:        b.id,
+      guestName: b.user?.name || (b.guestCheckout ? `${b.guestCheckout.firstName} ${b.guestCheckout.lastName}` : 'Guest'),
+      room:      b.room.name,
+      checkIn:   b.checkIn.toISOString().split('T')[0],
+      checkOut:  b.checkOut.toISOString().split('T')[0],
+      status:    b.status.toLowerCase() as 'confirmed' | 'pending',
+    }));
+  } catch (error) {
+    console.error('Error fetching calendar data:', error);
+    return null;
+  }
+}
+
+export async function getReviewsData() {
+  try {
+    const reviews = await prisma.review.findMany({
+      include: { user: true, room: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return reviews.map(r => ({
+      id: r.id,
+      guestName: r.user.name || r.user.email || 'Guest',
+      rating: r.rating as 1 | 2 | 3 | 4 | 5,
+      comment: r.comment || '',
+      room: r.room.name,
+      createdAt: r.createdAt.toISOString().split('T')[0],
+    }));
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
     return null;
   }
 }

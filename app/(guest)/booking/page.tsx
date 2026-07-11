@@ -286,6 +286,10 @@ function BookingPageContent() {
   const canProceedToPayment = guestDetails.firstName && guestDetails.lastName && guestDetails.email && guestDetails.phone;
 
   const handleSubmit = async () => {
+    if (!checkInDate || !checkOutDate || checkOutDate <= checkInDate) {
+      setSubmitError('Please select a valid check-in and check-out date (minimum 1 night).');
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -295,8 +299,8 @@ function BookingPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rooms: selectedRooms,
-          checkIn: checkInDate?.toISOString().split('T')[0],
-          checkOut: checkOutDate?.toISOString().split('T')[0],
+          checkIn: checkInDate ? toKey(checkInDate) : null,
+          checkOut: checkOutDate ? toKey(checkOutDate) : null,
           guests,
           guestDetails,
           paymentMethod,

@@ -2,18 +2,20 @@
 
 import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Star, 
-  Calendar, 
-  LogOut, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Star,
+  Calendar,
+  LogOut,
   Camera,
   CreditCard,
   Check,
-  Award
+  Award,
+  X,
+  Loader2,
 } from 'lucide-react';
 
 const TABS = ['Overview', 'My Bookings', 'Saved Payments', 'Loyalty', 'Edit Profile'];
@@ -27,6 +29,13 @@ const LOYALTY_TIERS = {
 
 function formatCurrency(amount: number) {
   return `LKR ${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+interface ExistingReview {
+  id: string;
+  roomId: string;
+  rating: number;
+  comment: string | null;
 }
 
 interface ProfileClientProps {
@@ -43,13 +52,59 @@ interface ProfileClientProps {
     preferredLanguage?: string | null;
     bookings: any[];
     savedPayments: any[];
-    reviews?: any[];
+    reviews?: ExistingReview[];
   };
 }
 
 export default function ProfileClient({ user }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState('Overview');
   const [saving, setSaving] = useState(false);
+
+  // Review modal state
+  const [reviewBooking, setReviewBooking]     = useState<any | null>(null);
+  const [reviewRating, setReviewRating]       = useState(0);
+  const [reviewHover, setReviewHover]         = useState(0);
+  const [reviewComment, setReviewComment]     = useState('');
+  const [reviewLoading, setReviewLoading]     = useState(false);
+  const [reviewError, setReviewError]         = useState('');
+  const [submittedRooms, setSubmittedRooms]   = useState<string[]>([]);
+
+  const alreadyReviewed = (roomId: string) =>
+    (user.reviews || []).some(r => r.roomId === roomId) || submittedRooms.includes(roomId);
+
+  const isPastStay = (checkOut: string) => new Date(checkOut) < new Date();
+
+  async function handleSubmitReview() {
+    if (!reviewBooking || reviewRating === 0) return;
+    setReviewLoading(true);
+    setReviewError('');
+    try {
+      const res = await fetch('/api/reviews', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating:    reviewRating,
+          comment:   reviewComment.trim() || null,
+          roomId:    reviewBooking.room.id,
+          bookingId: reviewBooking.id,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setReviewError(data.error || 'Failed to submit review.');
+        return;
+      }
+      setSubmittedRooms(prev => [...prev, reviewBooking.room.id]);
+      setReviewBooking(null);
+      setReviewRating(0);
+      setReviewComment('');
+    } catch {
+      setReviewError('Something went wrong. Please try again.');
+    } finally {
+      setReviewLoading(false);
+    }
+  }
+
   const [profileForm, setProfileForm] = useState({
     name: user.name || '',
     phone: user.phone || '',
@@ -273,9 +328,10 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                         </div>
 
                         {/* Action row */}
-                        {isBankTransfer && booking.status === 'PENDING' && (
-                          <div className="mt-3 pt-3 border-t flex items-center justify-between flex-wrap gap-2">
-                            {!receiptUploaded ? (
+                        <div className="mt-3 pt-3 border-t flex items-center justify-between flex-wrap gap-2">
+                          {/* Bank transfer receipt actions */}
+                          {isBankTransfer && booking.status === 'PENDING' && (
+                            !receiptUploaded ? (
                               <a href={`/booking/upload-receipt?ref=${booking.bookingNumber}`}
                                  className="text-sm bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition font-medium">
                                 Upload Payment Receipt
@@ -290,9 +346,27 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                                   Re-upload
                                 </a>
                               </div>
-                            ) : null}
-                          </div>
-                        )}
+                            ) : null
+                          )}
+
+                          {/* Review action — only for past confirmed stays */}
+                          {booking.status === 'CONFIRMED' && isPastStay(booking.checkOut) && (
+                            alreadyReviewed(booking.room?.id) ? (
+                              <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                                <Star size={14} className="fill-green-500 text-green-500" />
+                                Reviewed
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => { setReviewBooking(booking); setReviewRating(0); setReviewComment(''); setReviewError(''); }}
+                                className="flex items-center gap-1.5 text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary-light transition font-medium"
+                              >
+                                <Star size={14} />
+                                Leave a Review
+                              </button>
+                            )
+                          )}
+                        </div>
                       </div>
                     )})}
                   </div>
@@ -498,6 +572,93 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Review Modal */}
+      {reviewBooking && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-heading font-bold">Leave a Review</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{reviewBooking.room?.name}</p>
+              </div>
+              <button onClick={() => setReviewBooking(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Star picker */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Your Rating *</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onMouseEnter={() => setReviewHover(n)}
+                      onMouseLeave={() => setReviewHover(0)}
+                      onClick={() => setReviewRating(n)}
+                      className="focus:outline-none"
+                    >
+                      <Star
+                        size={32}
+                        className={
+                          n <= (reviewHover || reviewRating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+                {reviewRating > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
+                  </p>
+                )}
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your Review</label>
+                <textarea
+                  rows={4}
+                  placeholder="Tell us about your stay..."
+                  value={reviewComment}
+                  onChange={e => setReviewComment(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm"
+                />
+              </div>
+
+              {reviewError && (
+                <p className="text-sm text-red-600">{reviewError}</p>
+              )}
+
+              <div className="bg-primary-light rounded-lg px-4 py-2.5 text-sm text-primary font-medium flex items-center gap-2">
+                <Star size={14} className="fill-primary text-primary" />
+                You'll earn <strong>25 loyalty points</strong> for this review!
+              </div>
+            </div>
+
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={() => setReviewBooking(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={reviewLoading || reviewRating === 0}
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+              >
+                {reviewLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                Submit Review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

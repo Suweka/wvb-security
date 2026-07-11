@@ -1,62 +1,113 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { getCalendarData } from '@/lib/admin-actions';
+
+interface CalendarBooking {
+  id: string;
+  guestName: string;
+  room: string;
+  checkIn: string;
+  checkOut: string;
+  status: 'confirmed' | 'pending';
+}
+
+function getDatesInRange(checkIn: string, checkOut: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(checkIn);
+  const end   = new Date(checkOut);
+  const cur   = new Date(start);
+  while (cur < end) {
+    dates.push(cur.toISOString().split('T')[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 11)); // December 2025
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth());
+  });
+  const [bookings, setBookings]   = useState<CalendarBooking[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(false);
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    const data = await getCalendarData();
+    if (data) setBookings(data);
+    else setError(true);
+    setLoading(false);
+  }, []);
 
-    const days = [];
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-    return days;
-  };
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  const days = getDaysInMonth(currentDate);
+  const year  = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDay     = new Date(year, month, 1).getDay();
+  const daysInMonth  = new Date(year, month + 1, 0).getDate();
+
+  const days: (Date | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
+  ];
+
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const bookings = {
-    '10': [{ room: '101', guest: 'Sarah Johnson', type: 'Check-in' }],
-    '12': [{ room: '202', guest: 'Michael Chen', type: 'Check-out' }],
-    '14': [{ room: '303', guest: 'Emma Wilson', type: 'Check-in' }],
-    '15': [{ room: '104', guest: 'David Brown', type: 'Check-in' }],
-  };
+  // Build date → bookings map for this month
+  const dateMap: Record<string, CalendarBooking[]> = {};
+  for (const b of bookings) {
+    for (const d of getDatesInRange(b.checkIn, b.checkOut)) {
+      if (!dateMap[d]) dateMap[d] = [];
+      dateMap[d].push(b);
+    }
+  }
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
+  // Upcoming: check-ins from today
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcoming = bookings
+    .filter(b => b.checkIn >= todayStr)
+    .slice(0, 8);
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
+  const eventColors = ['border-blue-500 bg-blue-50', 'border-green-500 bg-green-50', 'border-purple-500 bg-purple-50', 'border-orange-500 bg-orange-50'];
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="animate-spin text-primary" size={48} />
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <AlertCircle className="text-red-500" size={40} />
+      <p className="text-gray-600">Failed to load calendar data.</p>
+      <button onClick={fetchBookings} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
+    </div>
+  );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-2">Calendar</h1>
-        <p className="text-gray-600">View and manage bookings and events</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-heading font-bold mb-2">Calendar</h1>
+          <p className="text-gray-600">View bookings and check-in/check-out events</p>
+        </div>
+        <button onClick={fetchBookings} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+          <RefreshCw size={14} /> Refresh
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendar */}
         <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
-          {/* Month Navigation */}
+          {/* Navigation */}
           <div className="flex items-center justify-between mb-6">
             <button
-              onClick={prevMonth}
+              onClick={() => setCurrentDate(new Date(year, month - 1))}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ChevronLeft size={24} />
@@ -65,7 +116,7 @@ export default function CalendarPage() {
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h2>
             <button
-              onClick={nextMonth}
+              onClick={() => setCurrentDate(new Date(year, month + 1))}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ChevronRight size={24} />
@@ -73,107 +124,88 @@ export default function CalendarPage() {
           </div>
 
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {dayNames.map((day) => (
-              <div key={day} className="text-center font-semibold text-gray-600 py-3">
-                {day}
-              </div>
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {dayNames.map(d => (
+              <div key={d} className="text-center font-semibold text-gray-600 py-2 text-sm">{d}</div>
             ))}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {days.map((date, index) => {
-              const dateStr = date ? date.getDate().toString() : '';
-              const hasBooking = bookings[dateStr as keyof typeof bookings];
-              const isToday = date && new Date().toDateString() === date.toDateString();
+          {/* Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((date, i) => {
+              if (!date) return <div key={i} />;
+              const dateStr  = date.toISOString().split('T')[0];
+              const dayBooks = dateMap[dateStr] ?? [];
+              const isToday  = dateStr === todayStr;
 
               return (
                 <div
-                  key={index}
-                  className={`aspect-square p-2 rounded-lg border-2 transition-all ${
-                    !date
-                      ? 'bg-transparent border-transparent'
-                      : isToday
+                  key={i}
+                  className={`min-h-[72px] p-1.5 rounded-lg border-2 transition-all ${
+                    isToday
                       ? 'border-primary bg-primary-light'
-                      : hasBooking
+                      : dayBooks.length > 0
                       ? 'border-accent bg-accent-light'
-                      : 'border-gray-200 bg-white hover:border-primary hover:bg-primary-light'
+                      : 'border-gray-100 bg-white hover:border-gray-300'
                   }`}
                 >
-                  {date && (
-                    <div className="h-full flex flex-col">
-                      <p className={`text-sm font-semibold ${isToday ? 'text-primary' : 'text-gray-700'}`}>
-                        {date.getDate()}
+                  <p className={`text-xs font-semibold mb-1 ${isToday ? 'text-primary' : 'text-gray-700'}`}>
+                    {date.getDate()}
+                  </p>
+                  <div className="space-y-0.5">
+                    {dayBooks.slice(0, 2).map(b => (
+                      <p key={b.id} title={`${b.guestName} — ${b.room}`}
+                        className="text-[10px] bg-blue-100 text-blue-700 px-1 rounded truncate leading-tight">
+                        {b.room}
                       </p>
-                      {hasBooking && (
-                        <div className="mt-1 text-xs">
-                          {hasBooking.map((booking, i) => (
-                            <p key={i} className="bg-blue-100 text-blue-700 px-1 rounded truncate">
-                              {booking.room}
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    ))}
+                    {dayBooks.length > 2 && (
+                      <p className="text-[10px] text-gray-500">+{dayBooks.length - 2} more</p>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
           {/* Legend */}
-          <div className="mt-6 pt-6 border-t flex flex-wrap gap-4">
+          <div className="mt-6 pt-4 border-t flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-primary rounded"></div>
+              <div className="w-4 h-4 border-2 border-primary rounded bg-primary-light" />
               <span className="text-sm text-gray-600">Today</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-accent rounded bg-accent-light"></div>
-              <span className="text-sm text-gray-600">Booking Event</span>
+              <div className="w-4 h-4 border-2 border-accent rounded bg-accent-light" />
+              <span className="text-sm text-gray-600">Active Booking</span>
             </div>
           </div>
         </div>
 
-        {/* Sidebar - Upcoming Events */}
+        {/* Upcoming Check-ins */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Upcoming Events</h3>
-              <button className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary-dark">
-                <Plus size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Event 1 */}
-              <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                <p className="font-semibold text-sm text-blue-900">Check-in</p>
-                <p className="text-xs text-blue-700 mt-1">Room 101 - Sarah Johnson</p>
-                <p className="text-xs text-blue-600 mt-1">Dec 10, 2025</p>
+            <h3 className="text-lg font-semibold mb-4">Upcoming Check-ins</h3>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-gray-500">No upcoming bookings.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcoming.map((b, i) => (
+                  <div
+                    key={b.id}
+                    className={`p-3 rounded-lg border-l-4 ${eventColors[i % eventColors.length]}`}
+                  >
+                    <p className="font-semibold text-xs text-gray-800">{b.checkIn}</p>
+                    <p className="text-xs text-gray-700 mt-0.5 truncate">{b.guestName}</p>
+                    <p className="text-xs text-gray-500 truncate">{b.room}</p>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${
+                      b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              {/* Event 2 */}
-              <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-                <p className="font-semibold text-sm text-green-900">Check-out</p>
-                <p className="text-xs text-green-700 mt-1">Room 202 - Michael Chen</p>
-                <p className="text-xs text-green-600 mt-1">Dec 12, 2025</p>
-              </div>
-
-              {/* Event 3 */}
-              <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-                <p className="font-semibold text-sm text-purple-900">Check-in</p>
-                <p className="text-xs text-purple-700 mt-1">Room 303 - Emma Wilson</p>
-                <p className="text-xs text-purple-600 mt-1">Dec 14, 2025</p>
-              </div>
-
-              {/* Event 4 */}
-              <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
-                <p className="font-semibold text-sm text-orange-900">Check-in</p>
-                <p className="text-xs text-orange-700 mt-1">Room 104 - David Brown</p>
-                <p className="text-xs text-orange-600 mt-1">Dec 15, 2025</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { RoomCard } from '@/components/guest/RoomCard';
 import { QuickBookingWidget } from '@/components/guest/QuickBookingWidget';
+import GoogleReviewsWidget from '@/components/GoogleReviewsWidget';
 import {
   Wifi,
   ChefHat,
@@ -15,7 +16,6 @@ import {
   Speaker,
   Mountain,
   Tv,
-  Star,
   MapPin,
   Calendar,
   CheckCircle,
@@ -96,21 +96,6 @@ export default function HomePage() {
     { icon: Speaker,  title: 'Bluetooth Mic & Speakers',  description: 'Entertainment-ready Bluetooth speakers and mic for gatherings' },
     { icon: Mountain, title: 'Picturesque Surroundings',  description: 'Breathtaking views of misty mountains and tea plantations at every turn' },
     { icon: Tv,       title: 'TV in Every Room',          description: 'Each room equipped with a television for your entertainment' },
-  ];
-
-  const testimonials = [
-    {
-      name: 'John Andrew',
-      rating: 5,
-      text: 'Amazing experience! The colonial architecture combined with modern amenities made our stay unforgettable.',
-      avatar: '/images/avatars/john.png',
-    },
-    {
-      name: 'Sarah Mitchell',
-      rating: 5,
-      text: 'Best hotel in Nuwara Eliya! The staff was incredibly helpful and the rooms were spotless.',
-      avatar: '/images/avatars/sarah.png',
-    },
   ];
 
   return (
@@ -259,38 +244,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — Google Reviews */}
       <section className="py-20 px-4 bg-primary-light">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <div className="text-primary font-medium mb-2">TESTIMONIALS</div>
-            <h2 className="text-4xl font-heading font-bold">Amazing Feedback From Our Guests</h2>
+            <h2 className="text-4xl font-heading font-bold">What Our Guests Say on Google</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-md">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="fill-accent text-accent" size={20} />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-6 italic">
-                  "{testimonial.text}"
-                </p>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover shadow-sm"
-                  />
-                  <div>
-                    <div className="font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500">Guest</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <GoogleReviewsWidget />
         </div>
       </section>
 

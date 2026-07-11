@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink } from 'lucide-react';
-import { getReservationsData } from '@/lib/admin-actions';
+import React, { useState, useEffect, Suspense } from 'react';
+import { Search, Plus, Eye, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink, X, Pencil } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { getReservationsData, getRoomsData } from '@/lib/admin-actions';
 
 type ReservationStatus = 'confirmed' | 'pending' | 'cancelled';
 type ReceiptStatus     = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -23,6 +24,7 @@ interface Reservation {
   email:         string;
   phone:         string;
   room:          string;
+  roomId:        string;
   checkIn:       string;
   checkOut:      string;
   nights:        number;
@@ -33,8 +35,15 @@ interface Reservation {
   receipt:       Receipt | null;
 }
 
-export default function ReservationsPage() {
-  const [searchQuery,     setSearchQuery]     = useState('');
+interface RoomOption {
+  id:    string;
+  name:  string;
+  price: number;
+}
+
+function ReservationsContent() {
+  const searchParams = useSearchParams();
+  const [searchQuery,     setSearchQuery]     = useState(searchParams.get('q') || '');
   const [filterStatus,    setFilterStatus]    = useState<ReservationStatus | 'all'>('all');
   const [reservations,    setReservations]    = useState<Reservation[]>([]);
   const [loading,         setLoading]         = useState(true);
@@ -42,6 +51,13 @@ export default function ReservationsPage() {
   const [selectedReceipt, setSelectedReceipt] = useState<Reservation | null>(null);
   const [reviewLoading,   setReviewLoading]   = useState(false);
   const [reviewMessage,   setReviewMessage]   = useState('');
+  const [viewDetail,      setViewDetail]      = useState<Reservation | null>(null);
+  const [cancellingId,    setCancellingId]    = useState<string | null>(null);
+  const [rooms,           setRooms]           = useState<RoomOption[]>([]);
+  const [editTarget,      setEditTarget]      = useState<Reservation | null>(null);
+  const [editForm,        setEditForm]        = useState({ roomId: '', checkIn: '', checkOut: '', guests: 1 });
+  const [editLoading,     setEditLoading]     = useState(false);
+  const [editError,       setEditError]       = useState('');
 
   async function fetchReservations() {
     setLoading(true);
@@ -52,7 +68,38 @@ export default function ReservationsPage() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchReservations(); }, []);
+  useEffect(() => {
+    fetchReservations();
+    getRoomsData().then(data => { if (data) setRooms(data.map(r => ({ id: r.id, name: r.name, price: r.price }))); });
+  }, []);
+
+  function openEdit(res: Reservation) {
+    setEditTarget(res);
+    setEditForm({ roomId: res.roomId, checkIn: res.checkIn, checkOut: res.checkOut, guests: res.guests });
+    setEditError('');
+  }
+
+  async function handleEditSubmit() {
+    if (!editTarget) return;
+    setEditLoading(true);
+    setEditError('');
+    try {
+      const res = await fetch(`/api/admin/reservations/${editTarget.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'edit', ...editForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'Failed to update reservation.'); return; }
+      setEditTarget(null);
+      setViewDetail(null);
+      fetchReservations();
+    } catch {
+      setEditError('Network error. Please try again.');
+    } finally {
+      setEditLoading(false);
+    }
+  }
 
   const filteredReservations = reservations.filter((res) => {
     const matchesSearch =
@@ -64,6 +111,24 @@ export default function ReservationsPage() {
   });
 
   const pendingReceipts = reservations.filter(r => r.paymentMethod === 'bank' && r.receipt?.status === 'PENDING');
+
+  async function handleCancel(bookingId: string) {
+    if (!confirm('Cancel this reservation? This cannot be undone.')) return;
+    setCancellingId(bookingId);
+    try {
+      const res = await fetch(`/api/admin/reservations/${bookingId}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'cancel' }),
+      });
+      if (!res.ok) throw new Error();
+      setReservations(prev => prev.map(r => r.id === bookingId ? { ...r, status: 'cancelled' as const } : r));
+    } catch {
+      alert('Failed to cancel reservation. Please try again.');
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   async function handleReceiptAction(receiptId: string, action: 'approve' | 'reject') {
     setReviewLoading(true);
@@ -224,15 +289,31 @@ export default function ReservationsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button className="p-2 hover:bg-blue-100 rounded-lg text-blue-600" title="View"><Eye size={18} /></button>
+                      <button
+                        onClick={() => setViewDetail(res)}
+                        className="p-2 hover:bg-blue-100 rounded-lg text-blue-600" title="View"
+                      ><Eye size={18} /></button>
+                      {res.status !== 'cancelled' && (
+                        <button
+                          onClick={() => openEdit(res)}
+                          className="p-2 hover:bg-primary/10 rounded-lg text-primary" title="Edit"
+                        ><Pencil size={18} /></button>
+                      )}
                       {res.paymentMethod === 'bank' && res.receipt?.status === 'PENDING' && (
                         <button onClick={() => { setSelectedReceipt(res); setReviewMessage(''); }}
                           className="p-2 hover:bg-orange-100 rounded-lg text-orange-600" title="Review Receipt">
                           <FileText size={18} />
                         </button>
                       )}
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" title="Edit"><Edit size={18} /></button>
-                      <button className="p-2 hover:bg-red-100 rounded-lg text-red-600" title="Cancel"><Trash2 size={18} /></button>
+                      {res.status !== 'cancelled' && (
+                        <button
+                          onClick={() => handleCancel(res.id)}
+                          disabled={cancellingId === res.id}
+                          className="p-2 hover:bg-red-100 rounded-lg text-red-600 disabled:opacity-40" title="Cancel"
+                        >
+                          {cancellingId === res.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -333,6 +414,152 @@ export default function ReservationsPage() {
           </div>
         </div>
       )}
+
+      {/* View Detail Modal */}
+      {viewDetail && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-xl font-heading font-bold">Booking Details</h2>
+              <button onClick={() => setViewDetail(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Booking Ref</span><span className="font-semibold text-primary">{viewDetail.id}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Guest</span><span className="font-medium">{viewDetail.guestName}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Email</span><span>{viewDetail.email}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span>{viewDetail.phone || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Room</span><span>{viewDetail.room}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Guests</span><span>{viewDetail.guests}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Check-in</span><span>{viewDetail.checkIn}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Check-out</span><span>{viewDetail.checkOut}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Nights</span><span>{viewDetail.nights}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Payment</span><span className="capitalize">{viewDetail.paymentMethod || '—'}</span></div>
+              <div className="flex justify-between border-t pt-3 mt-3">
+                <span className="text-gray-500">Total Amount</span>
+                <span className="font-bold text-lg">LKR {viewDetail.amount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Status</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  viewDetail.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                  viewDetail.status === 'pending'   ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-red-100 text-red-700'
+                }`}>{viewDetail.status.charAt(0).toUpperCase() + viewDetail.status.slice(1)}</span>
+              </div>
+            </div>
+            <div className="p-6 border-t flex justify-end gap-3">
+              {viewDetail.status !== 'cancelled' && (
+                <>
+                  <button
+                    onClick={() => openEdit(viewDetail)}
+                    className="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { setViewDetail(null); handleCancel(viewDetail.id); }}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                  >
+                    Cancel Booking
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setViewDetail(null)}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Reservation Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-xl font-heading font-bold">Edit Reservation — {editTarget.id}</h2>
+              <button onClick={() => setEditTarget(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                <select
+                  value={editForm.roomId}
+                  onChange={(e) => setEditForm(f => ({ ...f, roomId: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {rooms.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} — LKR {r.price.toLocaleString()}/night</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
+                  <input
+                    type="date"
+                    value={editForm.checkIn}
+                    onChange={(e) => setEditForm(f => ({ ...f, checkIn: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-out</label>
+                  <input
+                    type="date"
+                    value={editForm.checkOut}
+                    onChange={(e) => setEditForm(f => ({ ...f, checkOut: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={editForm.guests}
+                  onChange={(e) => setEditForm(f => ({ ...f, guests: Number(e.target.value) }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              {editError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{editError}</p>
+              )}
+            </div>
+            <div className="p-6 border-t flex justify-end gap-3">
+              <button
+                onClick={() => setEditTarget(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                disabled={editLoading}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {editLoading && <Loader2 size={16} className="animate-spin" />} Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function ReservationsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin text-primary" size={48} /></div>}>
+      <ReservationsContent />
+    </Suspense>
   );
 }
