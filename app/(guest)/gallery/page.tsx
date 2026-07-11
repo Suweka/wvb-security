@@ -151,7 +151,7 @@ export default function GalleryPage() {
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-heading font-bold mb-4">Experience It In Person</h2>
           <p className="text-gray-200 mb-6 max-w-2xl mx-auto">
-            Book your stay and discover the charm of our colonial bungalow
+            Book your stay and discover the charm of our vintage bungalow
           </p>
           <button className="bg-accent text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-accent-light transition-colors">
             Book Your Stay

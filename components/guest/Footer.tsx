@@ -79,8 +79,8 @@ export const Footer = () => {
           <div>
             <h3 className="text-xl font-heading font-bold mb-4">White Vintage Bungalow</h3>
             <p className="text-gray-400 mb-4">
-              Experience the charm of colonial-era hospitality in the heart of Nuwara Eliya, 
-              Sri Lanka's Little England.
+              Experience the charm of vintage hospitality in the heart of Nuwara Eliya,
+              Sri Lanka&apos;s Little England.
             </p>
             <div className="flex gap-3">
               <a href="#" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-primary transition-colors">

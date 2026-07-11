@@ -80,7 +80,7 @@ const ROOM_BY_SLUG: Record<string, RoomInfo> = {
     maxGuests: 2,
     size: 600,
     beds: '1 King Bed',
-    description: 'Luxurious suite with panoramic views, private balcony, and exclusive amenities for a truly indulgent experience. The pinnacle of colonial comfort.',
+    description: 'Luxurious suite with panoramic views, private balcony, and exclusive amenities for a truly indulgent experience. The pinnacle of vintage comfort.',
     image: '/images/rooms/premium.jpeg',
   },
   'garden-view': {
@@ -127,7 +127,7 @@ const SHARED_REVIEWS = [
     name: 'Emma Wilson',
     rating: 4,
     date: '2 months ago',
-    comment: 'Beautiful colonial charm with modern comforts. Highly recommend for a romantic getaway.',
+    comment: 'Beautiful vintage charm with modern comforts. Highly recommend for a romantic getaway.',
   },
 ];
 

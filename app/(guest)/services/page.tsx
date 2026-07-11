@@ -79,7 +79,7 @@ export default function ServicesPage() {
       features: [
         'Comfortable lounge seating',
         'Elegant dining table',
-        'Colonial-era décor',
+        'Vintage-style décor',
         'Board games & books available',
         'Shared access for all guests',
       ],

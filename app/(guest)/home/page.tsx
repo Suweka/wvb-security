@@ -137,7 +137,7 @@ export default function HomePage() {
             transition={{ duration: 0.7, delay: 0.45 }}
             className="text-xl mb-8 text-gray-200"
           >
-            Experience colonial elegance in the heart of Sri Lanka&apos;s hill country
+            Experience vintage charm in the heart of Sri Lanka&apos;s hill country
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -204,15 +204,15 @@ export default function HomePage() {
                 The Best Luxury Rooms And Suites
               </h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                White Vintage Bungalow is a historic colonial-era property nestled in the
-                picturesque hills of Nuwara Eliya. Built in the early 1900s, our bungalow
-                has been carefully restored to preserve its original charm while incorporating
-                modern luxury amenities.
+                White Vintage Bungalow is a family-run guest bungalow nestled in the
+                picturesque hills of Nuwara Eliya. With its timeless vintage character,
+                cosy interiors, and lush private garden, it offers a warm, personal
+                alternative to the big hotels.
               </p>
               <p className="text-gray-600 mb-8 leading-relaxed">
-                Surrounded by lush tea plantations and offering breathtaking views of the
-                misty mountains, we provide an authentic Sri Lankan hill country experience
-                with world-class hospitality.
+                Surrounded by tea plantations and misty mountain views, we&apos;ve spent
+                more than a decade providing an authentic Sri Lankan hill country
+                experience with hospitality that feels like home.
               </p>
               <Link href="/about">
                 <Button variant="primary" size="lg">

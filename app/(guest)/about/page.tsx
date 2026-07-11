@@ -7,10 +7,10 @@ import { Award, Users, Heart, Shield, Star, CheckCircle } from 'lucide-react';
 
 export default function AboutPage() {
   const stats = [
-    { number: '100+', label: 'Years of Heritage' },
-    { number: '10k+', label: 'Happy Guests' },
-    { number: '50+', label: 'Staff Members' },
-    { number: '4.9', label: 'Average Rating' },
+    { number: '10+', label: 'Years of Hospitality' },
+    { number: '500+', label: 'Happy Guests' },
+    { number: '4', label: 'Rooms & Suites' },
+    { number: '4.9', label: 'Google Rating' },
   ];
 
   const values = [
@@ -21,8 +21,8 @@ export default function AboutPage() {
     },
     {
       icon: Shield,
-      title: 'Heritage',
-      description: 'Preserving colonial charm while providing modern luxury and convenience.',
+      title: 'Vintage Charm',
+      description: 'Timeless vintage character and cosy interiors paired with modern comfort and convenience.',
     },
     {
       icon: Star,
@@ -43,13 +43,6 @@ export default function AboutPage() {
     { name: 'Suweka Jayakody', position: 'IT Manager', image: '/images/team/4.jpeg' },
   ];
 
-  const milestones = [
-    { year: '1895', event: 'Bungalow constructed during British colonial era' },
-    { year: '1950', event: 'Converted into a boutique guesthouse' },
-    { year: '2010', event: 'Comprehensive restoration preserving original architecture' },
-    { year: '2024', event: 'Awarded Best Heritage Hotel in Nuwara Eliya' },
-  ];
-
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -63,7 +56,7 @@ export default function AboutPage() {
         <div className="relative z-10 text-center max-w-4xl px-4">
           <h1 className="text-5xl md:text-6xl font-heading font-bold mb-4">About Us</h1>
           <p className="text-xl text-gray-200">
-            A Legacy of Elegance in Sri Lanka's Hill Country
+            Vintage Charm &amp; Warm Hospitality in Sri Lanka&apos;s Hill Country
           </p>
         </div>
       </section>
@@ -89,24 +82,24 @@ export default function AboutPage() {
             <div>
               <div className="text-primary font-medium mb-2">OUR STORY</div>
               <h2 className="text-4xl font-heading font-bold mb-6">
-                A Century of Hospitality Excellence
+                A Home Away From Home in the Hills
               </h2>
               <p className="text-gray-700 mb-4 leading-relaxed">
-                White Vintage Bungalow stands as a testament to colonial-era elegance, 
-                originally built in 1895 during the British colonial period. Nestled in 
-                the misty hills of Nuwara Eliya, our historic property has been carefully 
-                restored to preserve its original charm while incorporating modern luxury.
+                White Vintage Bungalow is a family-run guest bungalow nestled in the
+                misty hills of Nuwara Eliya. Styled with timeless vintage character —
+                white facades, cosy interiors, and a lush private garden — it offers a
+                warm, personal alternative to the big hotels.
               </p>
               <p className="text-gray-700 mb-4 leading-relaxed">
-                For over a century, we've welcomed travelers from around the world, 
-                offering them a unique blend of heritage architecture, warm Sri Lankan 
-                hospitality, and breathtaking natural beauty. Our bungalow is surrounded 
-                by lush tea plantations and offers panoramic views of the mountain ranges.
+                For more than a decade we&apos;ve welcomed travellers from Sri Lanka and
+                around the world, treating every guest like family. Home-style meals from
+                our in-house chef, evenings around the barbeque, and mornings with
+                mountain and tea-country views are what our guests remember most.
               </p>
               <p className="text-gray-700 mb-6 leading-relaxed">
-                Today, we continue this legacy by providing guests with an authentic 
-                experience that honors our past while embracing contemporary comfort 
-                and service standards.
+                Whether you&apos;re here for Gregory Lake, the tea trails, or simply the
+                cool hill-country air, our team makes sure your stay feels effortless
+                from check-in to farewell.
               </p>
               <Button variant="primary" size="lg">
                 Discover Our Rooms
@@ -154,34 +147,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
-            <div className="text-primary font-medium mb-2">OUR JOURNEY</div>
-            <h2 className="text-4xl font-heading font-bold">Historical Milestones</h2>
-          </div>
-
-          <div className="space-y-8">
-            {milestones.map((milestone, index) => (
-              <div key={index} className="flex gap-8 items-start">
-                <div className="flex-shrink-0 w-24 text-right">
-                  <div className="text-3xl font-bold text-primary">{milestone.year}</div>
-                </div>
-                <div className="flex-shrink-0 w-4 h-4 bg-primary rounded-full mt-2 relative">
-                  {index !== milestones.length - 1 && (
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-0.5 h-20 bg-primary-light" />
-                  )}
-                </div>
-                <div className="flex-1 pb-8">
-                  <p className="text-lg text-gray-700">{milestone.event}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Team Section */}
       <section className="py-20 px-4 bg-gray-50">
         <div className="container mx-auto">
@@ -213,33 +178,33 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Awards & Recognition */}
+      {/* Guest Favourites */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <div className="text-primary font-medium mb-2">AWARDS & RECOGNITION</div>
-            <h2 className="text-4xl font-heading font-bold">Our Achievements</h2>
+            <div className="text-primary font-medium mb-2">GUEST FAVOURITES</div>
+            <h2 className="text-4xl font-heading font-bold">What Guests Love Most</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
               {
-                title: 'Best Heritage Hotel 2024',
-                org: 'Sri Lanka Tourism Awards',
+                title: 'Home-Style Dining',
+                org: 'Fresh meals prepared by our in-house chef',
               },
               {
-                title: 'Excellence in Service',
-                org: 'TripAdvisor Certificate',
+                title: 'Garden & Barbeque Evenings',
+                org: 'Private garden with an outdoor BBQ grill',
               },
               {
-                title: 'Sustainable Tourism',
-                org: 'Green Hotels Association',
+                title: 'Tea-Country Views',
+                org: 'Misty mountains and plantations at every turn',
               },
-            ].map((award, index) => (
+            ].map((highlight, index) => (
               <div key={index} className="text-center p-6 bg-primary-light rounded-lg">
                 <Award className="text-primary mx-auto mb-4" size={48} />
-                <h3 className="text-lg font-semibold mb-2">{award.title}</h3>
-                <p className="text-gray-600">{award.org}</p>
+                <h3 className="text-lg font-semibold mb-2">{highlight.title}</h3>
+                <p className="text-gray-600">{highlight.org}</p>
               </div>
             ))}
           </div>
@@ -255,12 +220,12 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
-              'Authentic colonial architecture',
+              'Charming vintage-style bungalow',
               'Prime location in Nuwara Eliya',
-              'Personalized service',
-              'Modern luxury amenities',
+              'Personalized, family-run service',
+              'Modern comforts in every room',
               'Stunning mountain views',
-              'Award-winning hospitality',
+              '4.9★ rated by guests on Google',
             ].map((reason: string, index: number) => (
               <div key={index} className="flex items-center gap-3">
                 <CheckCircle size={24} className="text-accent flex-shrink-0" />
@@ -274,9 +239,9 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-heading font-bold mb-4">Experience Our Heritage</h2>
+          <h2 className="text-3xl font-heading font-bold mb-4">Experience the White Vintage Charm</h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Book your stay and become part of our century-long story
+            Book your stay and see why our guests keep coming back
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="primary" size="lg">
