@@ -1,6 +1,6 @@
 # Admin Dashboard — Completeness Audit
 
-> Generated: 2026-06-30 · Last updated: 2026-06-30
+> Generated: 2026-06-30 · Last updated: 2026-07-11
 
 ---
 
@@ -9,16 +9,34 @@
 | Section      | Backend Data    | Buttons Working          | Status       |
 |--------------|-----------------|--------------------------|--------------|
 | Dashboard    | Real (Prisma)   | Refresh only             | ✅ Done       |
-| Financials   | Real (Prisma)   | None                     | 🟡 Partial   |
-| Guests       | Real (Prisma)   | None                     | 🟡 Partial   |
+| Financials   | Real (Prisma)   | ✅ Export CSV            | ✅ Done       |
+| Guests       | Real (Prisma)   | ✅ View Detail + Add     | ✅ Done       |
 | Housekeeping | Real (Prisma)   | ✅ All wired             | ✅ Done       |
 | Rooms        | Real (Prisma)   | ✅ All wired             | ✅ Done       |
-| Reservations | Real (Prisma)   | ✅ View + Cancel + Receipt | ✅ Done     |
+| Reservations | Real (Prisma)   | ✅ View + Edit + Cancel + Receipt | ✅ Done |
 | Newsletter   | Real API        | Send works               | ✅ Done       |
 | Calendar     | ✅ Real (Prisma) | Navigation works        | ✅ Done       |
-| Concierge    | Hardcoded       | None                     | ❌ Not started |
+| Concierge    | ✅ Real (Prisma) | ✅ All wired            | ✅ Done       |
 | Messages     | ✅ Real (Prisma) | ✅ All wired             | ✅ Done       |
 | Reviews      | ✅ Real (Prisma) | ✅ Delete wired          | ✅ Done       |
+| Layout       | ✅ Real (Prisma) | ✅ Search + Bell + Settings | ✅ Done   |
+
+---
+
+## Fixed 2026-07-11 — Environment & Infrastructure
+
+- **Root cause of "messages not loading / contact can't send / receipt fails":**
+  the app's runtime DB is `localhost` Postgres (from `.env.local`, which overrides `.env`),
+  but `prisma db push` had only been run against the Neon cloud DB (from `.env`).
+  The local DB was missing `ContactMessage`, `ConciergeRequest`, and `BankTransferReceipt`
+  tables. Fixed by pushing the schema to the local DB and running both seed scripts.
+  ⚠️ **Remember:** when changing `prisma/schema.prisma`, push to the DB the app actually
+  uses: `DATABASE_URL=<local url> npx prisma db push`.
+- **Google Fonts broke `next build`** on this network (CDN unreachable). Replaced
+  `next/font/google` with self-hosted fonts in `public/fonts/` + `@font-face` in
+  `globals.css`. Build no longer needs any network access.
+- **`Sidebar.tsx` filename casing mismatch** (tracked as `Sidebar.tsx`, on disk
+  `sidebar.tsx`) — would have broken Linux/Vercel builds. Fixed.
 
 ---
 
@@ -146,56 +164,54 @@
 
 ---
 
-### 2. Guests — View Detail + Add Guest ❌
+### 2. Guests — View Detail + Add Guest ✅ (completed 2026-07-11)
 
 **Frontend (admin) — `app/admin/guests/page.tsx`**
-- [ ] View Guest Details (Eye icon) — modal showing full booking history, total spent, contact info
-- [ ] Add Guest button — manual guest creation form
+- [x] View Guest Details (Eye icon) — modal showing full booking history, total spent, contact info
+- [x] Add Guest button — manual guest creation form
 
 **Backend**
-- [ ] `POST /api/admin/guests` — manually create a guest record
+- [x] `POST /api/admin/guests` — manually create a guest record
+- [x] `GET /api/admin/guests/[id]` — guest detail with booking history
 
 ---
 
-### 3. Financials — Export Report ❌
+### 3. Financials — Export Report ✅ (completed 2026-07-11)
 
 **Frontend (admin) — `app/admin/financials/page.tsx`**
-- [ ] Export Report button — generate and download a CSV of revenue data
-- [ ] Could use a server action that streams a CSV response
+- [x] Export Report button — downloads CSV from `GET /api/admin/financials/export`
 
 ---
 
-### 4. Concierge — Full Stack Not Started ❌
-
-The concierge section is entirely hardcoded. No schema model exists.
+### 4. Concierge — Full Stack ✅ (completed 2026-07-11)
 
 **Schema**
-- [ ] Design and add a `ConciergeRequest` model (or repurpose `ServiceBooking`)
+- [x] `ConciergeRequest` model + `ConciergeStatus` enum
 
 **Backend**
-- [ ] `GET /api/admin/concierge` — list requests
-- [ ] `POST /api/admin/concierge` — create request
-- [ ] `PATCH /api/admin/concierge/[id]` — update status (Start Processing / Mark Complete)
+- [x] `GET /api/admin/concierge` — list requests
+- [x] `POST /api/admin/concierge` — create request
+- [x] `PATCH /api/admin/concierge/[id]` — update status (Start Processing / Mark Complete)
 
 **Frontend (admin) — `app/admin/concierge/page.tsx`**
-- [ ] Replace hardcoded data with real API fetch
-- [ ] Wire up Start Processing and Mark Complete buttons
-- [ ] New Request modal
+- [x] Real API fetch, status action buttons, New Request modal
 
 ---
 
-### 5. Reservations — Edit Booking ❌
+### 5. Reservations — Edit Booking ✅ (completed 2026-07-11)
 
-- [ ] Edit reservation details (dates, guests, room) — requires availability check
-- [ ] `PATCH /api/admin/reservations/[id]` with `action: 'edit'`
+- [x] Edit modal: change room, dates, guest count — recalculates total from room price
+- [x] `PATCH /api/admin/reservations/[id]` with `action: 'edit'`
+- [x] Availability check rejects edits that overlap another active booking (409)
 
 ---
 
-### 6. Layout — Global Admin UI ❌
+### 6. Layout — Global Admin UI ✅ (completed 2026-07-11)
 
-- [ ] Search bar in top navbar — search across bookings/guests
-- [ ] Notifications bell — show unread messages count or pending receipt count
-- [ ] Settings page — admin profile, property details
+- [x] Search bar in top navbar — live search across bookings/guests (`GET /api/admin/search`), results deep-link to filtered pages
+- [x] Notifications bell — unread messages + pending receipts (`GET /api/admin/notifications`), 60s refresh
+- [x] Settings page — admin account info + property details, logout
+- [x] Sidebar: real admin name/role, working logout, live unread-messages badge
 
 ---
 

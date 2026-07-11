@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const poppins = Poppins({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-  variable: "--font-poppins",
-  display: "swap",
-});
+// Fonts are self-hosted from /public/fonts and declared in globals.css
+// (next/font/google removed — it requires fetching from Google CDN at build time,
+// which fails on unreliable networks and breaks the production build).
 
 export const metadata: Metadata = {
   title: "White Vintage Bungalow - Heritage Hotel in Nuwara Eliya",
@@ -40,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${poppins.variable} antialiased`}>
+      <body className="antialiased">
         <Providers>
           {children}
         </Providers>

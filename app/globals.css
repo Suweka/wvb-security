@@ -2,6 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted fonts (served from /public/fonts — no external CDN needed at build or runtime) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-latin-400-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-latin-500-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-latin-600-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-700-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-400-normal.woff2') format('woff2'),
+       url('/fonts/poppins-latin-400-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-500-normal.woff2') format('woff2'),
+       url('/fonts/poppins-latin-500-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-600-normal.woff2') format('woff2'),
+       url('/fonts/poppins-latin-600-normal.woff') format('woff');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-700-normal.woff2') format('woff2'),
+       url('/fonts/poppins-latin-700-normal.woff') format('woff');
+}
+
 @layer base {
   :root {
     --color-primary: 32 143 106;
@@ -9,6 +71,8 @@
     --color-primary-dark: 26 115 86;
     --color-accent: 229 196 102;
     --color-accent-light: 245 232 179;
+    --font-inter: 'Inter';
+    --font-poppins: 'Poppins';
   }
 
   * {
