@@ -51,7 +51,9 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   }
 
   // --- Google ---
-  const handleGoogle = () => signIn('google', { callbackUrl: '/profile' })
+  // Return the user to wherever they were (matches email/OTP sign-in behavior)
+  // instead of always jumping to /profile, so mid-booking context isn't lost.
+  const handleGoogle = () => signIn('google', { callbackUrl: window.location.pathname + window.location.search })
 
   // --- Email Login ---
   const handleLogin = async (e: React.FormEvent) => {
