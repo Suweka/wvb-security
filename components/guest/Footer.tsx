@@ -78,7 +78,7 @@ export const Footer = () => {
           {/* About Section */}
           <div>
             <h3 className="text-xl font-heading font-bold mb-4">White Vintage Bungalow</h3>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 dark:text-gray-500 mb-4">
               Experience the charm of vintage hospitality in the heart of Nuwara Eliya,
               Sri Lanka&apos;s Little England.
             </p>
@@ -101,7 +101,7 @@ export const Footer = () => {
           {/* Explore Links */}
           <div>
             <h4 className="text-lg font-heading font-semibold mb-4">EXPLORE</h4>
-            <ul className="space-y-2 text-gray-400">
+            <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li><Link href="/" className="hover:text-accent transition-colors">About Hotel</Link></li>
               <li><Link href="/rooms" className="hover:text-accent transition-colors">Rooms</Link></li>
               <li><Link href="/gallery" className="hover:text-accent transition-colors">Gallery</Link></li>
@@ -113,7 +113,7 @@ export const Footer = () => {
           {/* Contact Info */}
           <div>
             <h4 className="text-lg font-heading font-semibold mb-4">CONTACT</h4>
-            <ul className="space-y-3 text-gray-400">
+            <ul className="space-y-3 text-gray-400 dark:text-gray-500">
               <li className="flex items-start gap-2">
                 <MapPin size={18} className="text-accent mt-1 flex-shrink-0" />
                 <span>78/5 Bakers Park, 18 Dawson Hills, Nuwara Eliya, LK</span>
@@ -132,7 +132,7 @@ export const Footer = () => {
           {/* Newsletter */}
           <div>
             <h4 className="text-lg font-heading font-semibold mb-4">NEWSLETTER</h4>
-            <p className="text-gray-400 mb-4">Subscribe to get special offers and updates</p>
+            <p className="text-gray-400 dark:text-gray-500 mb-4">Subscribe to get special offers and updates</p>
             <form onSubmit={handleSubscribe} className="space-y-3">
               <div className="flex gap-2">
                 <input
@@ -147,7 +147,7 @@ export const Footer = () => {
                 <button 
                   type="submit"
                   disabled={status === 'loading'}
-                  className="bg-accent text-gray-900 px-4 py-2 rounded-md hover:bg-accent-light transition-colors font-medium disabled:opacity-50"
+                  className="bg-accent text-gray-900 dark:text-gray-100 px-4 py-2 rounded-md hover:bg-accent-light transition-colors font-medium disabled:opacity-50"
                 >
                   {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : '→'}
                 </button>
@@ -158,7 +158,7 @@ export const Footer = () => {
                 </p>
               )}
             </form>
-            <label className="flex items-center gap-2 mt-3 text-sm text-gray-400">
+            <label className="flex items-center gap-2 mt-3 text-sm text-gray-400 dark:text-gray-500">
               <input type="checkbox" className="rounded" required />
               I agree to all terms and policies
             </label>
@@ -168,7 +168,7 @@ export const Footer = () => {
 
       {/* Bottom Bar */}
       <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
+        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 dark:text-gray-500">
           <p>© Copyright 2026 White Vintage Bungalow. All Rights Reserved</p>
           <div className="flex flex-wrap gap-6 mt-4 md:mt-0">
             <Link href="/terms" className="hover:text-accent transition-colors">Terms &amp; Conditions</Link>

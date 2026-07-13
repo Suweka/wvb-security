@@ -44,16 +44,16 @@ function MiniCalendar({
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setViewMonth(new Date(y, m - 1))}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-semibold text-gray-900">
+        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {MONTH_NAMES[m]} {y}
         </span>
         <button
           onClick={() => setViewMonth(new Date(y, m + 1))}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronRight size={16} />
         </button>
@@ -62,7 +62,7 @@ function MiniCalendar({
       {/* Day labels */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_LABELS.map(d => (
-          <div key={d} className="h-7 flex items-center justify-center text-xs font-medium text-gray-400">
+          <div key={d} className="h-7 flex items-center justify-center text-xs font-medium text-gray-400 dark:text-gray-500">
             {d}
           </div>
         ))}
@@ -80,7 +80,7 @@ function MiniCalendar({
                 'h-8 w-full flex items-center justify-center rounded-lg text-xs transition-colors',
                 isDisabled(d)
                   ? 'text-gray-300 cursor-not-allowed'
-                  : 'cursor-pointer hover:bg-primary-light text-gray-700',
+                  : 'cursor-pointer hover:bg-primary-light text-gray-700 dark:text-gray-300',
                 isSelected(d)
                   ? '!bg-primary text-white font-semibold'
                   : '',
@@ -181,7 +181,7 @@ export function QuickBookingWidget() {
 
         {/* Check In */}
         <div className="p-5 relative">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             Check In
           </p>
           <button
@@ -189,14 +189,14 @@ export function QuickBookingWidget() {
             className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 transition-colors text-left focus:outline-none ${
               openPicker === 'checkIn'
                 ? 'border-primary bg-primary-light'
-                : 'border-gray-200 hover:border-primary bg-white'
+                : 'border-gray-200 dark:border-gray-700 hover:border-primary bg-white'
             }`}
           >
             <CalendarDays size={16} className="text-primary flex-shrink-0" />
-            <span className={`flex-1 text-sm font-semibold ${checkIn ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`flex-1 text-sm font-semibold ${checkIn ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
               {fmtDate(checkIn) ?? 'Select date'}
             </span>
-            <ChevronDown size={14} className={`text-gray-400 flex-shrink-0 transition-transform ${openPicker === 'checkIn' ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`text-gray-400 dark:text-gray-500 flex-shrink-0 transition-transform ${openPicker === 'checkIn' ? 'rotate-180' : ''}`} />
           </button>
           {openPicker === 'checkIn' && (
             <div className="absolute top-full left-0 mt-1 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-fadeIn">
@@ -207,7 +207,7 @@ export function QuickBookingWidget() {
 
         {/* Check Out */}
         <div className="p-5 relative">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             Check Out
           </p>
           <button
@@ -215,14 +215,14 @@ export function QuickBookingWidget() {
             className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 transition-colors text-left focus:outline-none ${
               openPicker === 'checkOut'
                 ? 'border-primary bg-primary-light'
-                : 'border-gray-200 hover:border-primary bg-white'
+                : 'border-gray-200 dark:border-gray-700 hover:border-primary bg-white'
             }`}
           >
             <CalendarDays size={16} className="text-primary flex-shrink-0" />
-            <span className={`flex-1 text-sm font-semibold ${checkOut ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`flex-1 text-sm font-semibold ${checkOut ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
               {fmtDate(checkOut) ?? 'Select date'}
             </span>
-            <ChevronDown size={14} className={`text-gray-400 flex-shrink-0 transition-transform ${openPicker === 'checkOut' ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`text-gray-400 dark:text-gray-500 flex-shrink-0 transition-transform ${openPicker === 'checkOut' ? 'rotate-180' : ''}`} />
           </button>
           {openPicker === 'checkOut' && (
             <div className="absolute top-full left-0 mt-1 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-fadeIn">
@@ -233,7 +233,7 @@ export function QuickBookingWidget() {
 
         {/* Guests */}
         <div className="p-6">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             <Users size={13} className="text-primary" />
             Guests
           </p>
@@ -241,17 +241,17 @@ export function QuickBookingWidget() {
             <button
               onClick={() => setGuests(g => Math.max(1, g - 1))}
               disabled={guests <= 1}
-              className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Minus size={13} />
             </button>
-            <span className="font-semibold text-gray-900 min-w-[5rem] text-center text-base">
+            <span className="font-semibold text-gray-900 dark:text-gray-100 min-w-[5rem] text-center text-base">
               {guests} {guests === 1 ? 'Guest' : 'Guests'}
             </span>
             <button
               onClick={() => setGuests(g => Math.min(8, g + 1))}
               disabled={guests >= 8}
-              className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Plus size={13} />
             </button>

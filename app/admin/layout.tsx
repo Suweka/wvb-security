@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { getAdminUser, clearAuth } from '@/lib/auth';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 interface AdminUser {
   id: number;
@@ -117,16 +118,20 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative">
+      {/* Ambient glass background blobs */}
+      <div className="fixed top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float pointer-events-none" />
+      <div className="fixed bottom-0 left-64 w-72 h-72 bg-accent/10 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+
       <AdminSidebar />
-      
-      <div className="lg:ml-[260px]">
+
+      <div className="lg:ml-[260px] relative">
         {/* Top Navigation */}
-        <header className="bg-white shadow-sm sticky top-0 z-30">
+        <header className="glass-strong shadow-sm sticky top-0 z-30">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4 flex-1 max-w-2xl">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
                 <input
                   type="text"
                   placeholder="Search bookings or guests by name, email, ID"
@@ -134,23 +139,23 @@ export default function AdminLayout({
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
                   onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-white/60 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 />
                 {searchOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-40 max-h-80 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 glass-strong rounded-lg shadow-lg z-40 max-h-80 overflow-y-auto animate-fadeIn">
                     {searchResults.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-gray-500">No matches found.</p>
+                      <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No matches found.</p>
                     ) : searchResults.map((r, i) => (
                       <button
                         key={i}
                         onMouseDown={() => goToSearchResult(r.href)}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between border-b last:border-b-0"
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-white/10 flex items-center justify-between border-b last:border-b-0"
                       >
                         <div>
                           <p className="text-sm font-medium">{r.label}</p>
-                          <p className="text-xs text-gray-500">{r.sublabel}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{r.sublabel}</p>
                         </div>
-                        <span className="text-xs text-gray-400 capitalize">{r.type}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{r.type}</span>
                       </button>
                     ))}
                   </div>
@@ -159,33 +164,35 @@ export default function AdminLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <button onClick={() => router.push('/admin/settings')} className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Settings size={20} className="text-gray-600" />
+              <ThemeToggle />
+
+              <button onClick={() => router.push('/admin/settings')} className="relative p-2 hover:bg-gray-100 dark:hover:bg-white/10 dark:hover:bg-white/10 rounded-lg">
+                <Settings size={20} className="text-gray-600 dark:text-gray-400" />
               </button>
 
               <div className="relative">
                 <button
                   onClick={() => setNotifOpen(o => !o)}
                   onBlur={() => setTimeout(() => setNotifOpen(false), 150)}
-                  className="relative p-2 hover:bg-gray-100 rounded-lg"
+                  className="relative p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg"
                 >
-                  <Bell size={20} className="text-gray-600" />
+                  <Bell size={20} className="text-gray-600 dark:text-gray-400" />
                   {notifCount > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                   )}
                 </button>
                 {notifOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-40 max-h-80 overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-1 w-80 glass-strong rounded-lg shadow-lg z-40 max-h-80 overflow-y-auto animate-fadeIn">
                     {notifItems.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-gray-500">No new notifications.</p>
+                      <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No new notifications.</p>
                     ) : notifItems.map((n, i) => (
                       <button
                         key={i}
                         onMouseDown={() => { setNotifOpen(false); router.push(n.href); }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b last:border-b-0"
+                        className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-white/10 border-b last:border-b-0"
                       >
                         <p className="text-sm font-medium">{n.label}</p>
-                        <p className="text-xs text-gray-500">{n.sublabel}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{n.sublabel}</p>
                       </button>
                     ))}
                   </div>
@@ -202,11 +209,11 @@ export default function AdminLayout({
                 />
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold">{user.name}</h4>
-                  <p className="text-xs text-gray-500">{user.role}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{user.role}</p>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600 transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-600 transition-colors"
                   title="Logout"
                 >
                   <LogOut size={20} />
@@ -217,7 +224,7 @@ export default function AdminLayout({
         </header>
 
         {/* Main Content */}
-        <main>
+        <main key={pathname} className="animate-fadeIn">
           {children}
         </main>
       </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
@@ -188,7 +188,7 @@ export default function ServicesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-20 px-4">
         <div className="container mx-auto text-center">
@@ -204,7 +204,7 @@ export default function ServicesPage() {
         <div className="text-center mb-12">
           <div className="text-primary font-medium mb-2">WHAT WE OFFER</div>
           <h2 className="text-4xl font-heading font-bold">Our Facilities & Services</h2>
-          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 mt-4 max-w-2xl mx-auto">
             From home-cooked meals to scenic garden spaces, every detail is crafted for your comfort
           </p>
         </div>
@@ -213,22 +213,22 @@ export default function ServicesPage() {
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-white rounded-lg p-8 shadow-md hover:shadow-xl transition-shadow"
+              className="glass-card hover-lift rounded-2xl p-8"
             >
               <div className="w-16 h-16 bg-primary-light rounded-lg flex items-center justify-center mb-4">
                 <service.icon className="text-primary" size={32} />
               </div>
               <h3 className="text-2xl font-heading font-semibold mb-3">{service.title}</h3>
-              <p className="text-gray-600 mb-4">{service.description}</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{service.description}</p>
               <ul className="space-y-2 mb-6">
                 {service.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-gray-700">
+                  <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                     <Check size={16} className="text-primary mt-1 flex-shrink-0" />
                     <span className="text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <span className="text-primary font-semibold">{service.price}</span>
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function ServicesPage() {
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-heading font-bold">Additional Services</h2>
-            <p className="text-gray-600 mt-4">More ways we make your stay comfortable</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">More ways we make your stay comfortable</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-5xl mx-auto">
             {additionalServices.map((service, index) => (
@@ -250,7 +250,7 @@ export default function ServicesPage() {
                 className="bg-white p-6 rounded-lg text-center shadow-sm hover:shadow-md transition-shadow"
               >
                 <Check className="text-primary mx-auto mb-2" size={24} />
-                <p className="text-sm font-medium text-gray-700">{service}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{service}</p>
               </div>
             ))}
           </div>
@@ -270,7 +270,7 @@ export default function ServicesPage() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-heading font-bold mb-2">BBQ Evening Package</h3>
               <div className="text-3xl font-bold text-primary mb-1">LKR 15,000</div>
-              <p className="text-gray-600">per group</p>
+              <p className="text-gray-600 dark:text-gray-400">per group</p>
             </div>
             <ul className="space-y-3 mb-8">
               {[
@@ -290,13 +290,13 @@ export default function ServicesPage() {
 
           {/* Romance Package */}
           <div className="bg-white p-8 rounded-lg shadow-lg border-2 border-accent">
-            <div className="bg-accent text-gray-900 px-3 py-1 rounded-full inline-block mb-4 text-sm font-semibold">
+            <div className="bg-accent text-gray-900 dark:text-gray-100 px-3 py-1 rounded-full inline-block mb-4 text-sm font-semibold">
               POPULAR
             </div>
             <div className="text-center mb-6">
               <h3 className="text-2xl font-heading font-bold mb-2">Romance Package</h3>
               <div className="text-3xl font-bold text-primary mb-1">LKR 35,000</div>
-              <p className="text-gray-600">per couple</p>
+              <p className="text-gray-600 dark:text-gray-400">per couple</p>
             </div>
             <ul className="space-y-3 mb-8">
               {[
@@ -319,7 +319,7 @@ export default function ServicesPage() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-heading font-bold mb-2">Adventure Package</h3>
               <div className="text-3xl font-bold text-primary mb-1">LKR 30,000</div>
-              <p className="text-gray-600">per person</p>
+              <p className="text-gray-600 dark:text-gray-400">per person</p>
             </div>
             <ul className="space-y-3 mb-8">
               {[
@@ -357,7 +357,7 @@ export default function ServicesPage() {
 
       {/* Service Hours */}
       <section className="container mx-auto px-4 py-16">
-        <div className="bg-gray-100 p-8 rounded-lg max-w-3xl mx-auto">
+        <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-lg max-w-3xl mx-auto">
           <h3 className="text-2xl font-heading font-bold mb-6 text-center">Availability</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
@@ -368,7 +368,7 @@ export default function ServicesPage() {
               { service: 'Transportation',           hours: 'By appointment' },
               { service: 'Concierge',               hours: '24/7' },
             ].map((item, i) => (
-              <div key={i} className="flex justify-between items-center p-4 bg-white rounded-lg">
+              <div key={i} className="flex justify-between items-center p-4 glass-card rounded-xl">
                 <span className="font-medium">{item.service}</span>
                 <span className="text-primary font-semibold">{item.hours}</span>
               </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -151,7 +151,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/rooms">
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-gray-900 backdrop-blur-sm bg-white/5 hover:scale-105 transition-all">
+              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-gray-900 dark:text-gray-100 backdrop-blur-sm bg-white/5 hover:scale-105 transition-all">
                 Explore Rooms
               </Button>
             </Link>
@@ -203,13 +203,13 @@ export default function HomePage() {
               <h2 className="text-4xl font-heading font-bold mb-6">
                 The Best Luxury Rooms And Suites
               </h2>
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 White Vintage Bungalow is a family-run guest bungalow nestled in the
                 picturesque hills of Nuwara Eliya. With its timeless vintage character,
                 cosy interiors, and lush private garden, it offers a warm, personal
                 alternative to the big hotels.
               </p>
-              <p className="text-gray-600 mb-8 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 Surrounded by tea plantations and misty mountain views, we&apos;ve spent
                 more than a decade providing an authentic Sri Lankan hill country
                 experience with hospitality that feels like home.
@@ -241,7 +241,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Rooms */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
           <Reveal className="text-center mb-12">
             <div className="text-primary font-medium mb-2">ROOMS AND SUITES</div>
@@ -279,7 +279,7 @@ export default function HomePage() {
                   <service.icon className="text-primary group-hover:text-white transition-colors" size={32} />
                 </div>
                 <h3 className="text-xl font-heading font-semibold mb-3">{service.title}</h3>
-                <p className="text-gray-600">{service.description}</p>
+                <p className="text-gray-600 dark:text-gray-400">{service.description}</p>
               </div>
             ))}
           </Stagger>
@@ -332,14 +332,14 @@ export default function HomePage() {
                   <MapPin className="text-primary mt-1 flex-shrink-0" size={24} />
                   <div>
                     <h4 className="font-semibold mb-1">Address</h4>
-                    <p className="text-gray-600">78/5 Bakers Park, Dawson Hills, Nuwara Eliya</p>
+                    <p className="text-gray-600 dark:text-gray-400">78/5 Bakers Park, Dawson Hills, Nuwara Eliya</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Calendar className="text-primary mt-1 flex-shrink-0" size={24} />
                   <div>
                     <h4 className="font-semibold mb-1">Nearby Attractions</h4>
-                    <ul className="text-gray-600 space-y-1">
+                    <ul className="text-gray-600 dark:text-gray-400 space-y-1">
                       <li>• Gregory Lake - 2 km</li>
                       <li>• Hakgala Botanical Garden - 5 km</li>
                       <li>• Victoria Park - 3 km</li>
@@ -390,7 +390,7 @@ export default function HomePage() {
               placeholder="Your email address"
               required
               disabled={newsletterLoading}
-              className="flex-1 px-4 py-3 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-70"
+              className="flex-1 px-4 py-3 rounded-md text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-70"
             />
             <Button variant="secondary" size="lg" type="submit" disabled={newsletterLoading}>
               {newsletterLoading ? <Loader2 size={18} className="animate-spin" /> : 'Subscribe'}
@@ -403,12 +403,12 @@ export default function HomePage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setNewsletterPopup(null)}>
             <div className="absolute inset-0 bg-black/40" />
             <div
-              className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center"
+              className="relative glass-strong rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center"
               onClick={e => e.stopPropagation()}
             >
               <button
                 onClick={() => setNewsletterPopup(null)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"
               >
                 <X size={20} />
               </button>
@@ -418,9 +418,9 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="text-green-500" size={36} />
                   </div>
-                  <h3 className="text-xl font-heading font-bold text-gray-900 mb-2">You&apos;re Subscribed!</h3>
-                  <p className="text-gray-600 text-sm mb-1">{newsletterPopup.message}</p>
-                  <p className="text-gray-500 text-sm">Check your inbox for a welcome email from White Vintage Bungalow.</p>
+                  <h3 className="text-xl font-heading font-bold text-gray-900 dark:text-gray-100 mb-2">You&apos;re Subscribed!</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{newsletterPopup.message}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Check your inbox for a welcome email from White Vintage Bungalow.</p>
                   <button
                     onClick={() => setNewsletterPopup(null)}
                     className="mt-6 w-full bg-primary text-white py-2.5 rounded-lg font-semibold hover:bg-primary-dark transition-colors"
@@ -433,11 +433,11 @@ export default function HomePage() {
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <X className="text-red-500" size={36} />
                   </div>
-                  <h3 className="text-xl font-heading font-bold text-gray-900 mb-2">Oops!</h3>
-                  <p className="text-gray-600 text-sm">{newsletterPopup.message}</p>
+                  <h3 className="text-xl font-heading font-bold text-gray-900 dark:text-gray-100 mb-2">Oops!</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{newsletterPopup.message}</p>
                   <button
                     onClick={() => setNewsletterPopup(null)}
-                    className="mt-6 w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                    className="mt-6 w-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
                   >
                     Try Again
                   </button>

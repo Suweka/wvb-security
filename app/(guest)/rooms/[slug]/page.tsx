@@ -160,7 +160,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white animate-fadeIn">
       {/* Image Gallery */}
       <section className="relative">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[500px]">
@@ -197,10 +197,10 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                 <div className="flex items-center gap-2">
                   <Star className="fill-accent text-accent" size={20} />
                   <span className="text-xl font-semibold">{averageRating.toFixed(1)}</span>
-                  <span className="text-gray-500">({SHARED_REVIEWS.length} reviews)</span>
+                  <span className="text-gray-500 dark:text-gray-400">({SHARED_REVIEWS.length} reviews)</span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-6 text-gray-600">
+              <div className="flex flex-wrap gap-6 text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <Users size={20} />
                   <span>Up to {roomInfo.maxGuests} Guest{roomInfo.maxGuests > 1 ? 's' : ''}</span>
@@ -219,7 +219,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
             {/* Description */}
             <div className="mb-8">
               <h2 className="text-2xl font-heading font-semibold mb-4">About This Room</h2>
-              <p className="text-gray-700 leading-relaxed">{roomInfo.description}</p>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{roomInfo.description}</p>
             </div>
 
             {/* Amenities */}
@@ -232,7 +232,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                   </h3>
                   <ul className="space-y-2">
                     {SHARED_AMENITIES.room.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-gray-700">
+                      <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Check size={16} className="text-primary" /> {item}
                       </li>
                     ))}
@@ -244,7 +244,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                   </h3>
                   <ul className="space-y-2">
                     {SHARED_AMENITIES.bathroom.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-gray-700">
+                      <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Check size={16} className="text-primary" /> {item}
                       </li>
                     ))}
@@ -256,7 +256,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                   </h3>
                   <ul className="space-y-2">
                     {SHARED_AMENITIES.technology.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-gray-700">
+                      <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Check size={16} className="text-primary" /> {item}
                       </li>
                     ))}
@@ -268,7 +268,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                   </h3>
                   <ul className="space-y-2">
                     {SHARED_AMENITIES.food.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-gray-700">
+                      <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                         <Check size={16} className="text-primary" /> {item}
                       </li>
                     ))}
@@ -278,7 +278,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
             </div>
 
             {/* Policies */}
-            <div className="mb-8 bg-gray-50 p-6 rounded-lg">
+            <div className="mb-8 bg-gray-50 dark:bg-gray-900 p-6 rounded-lg">
               <h2 className="text-2xl font-heading font-semibold mb-4">Rules & Regulations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -286,19 +286,19 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                     <Calendar className="text-primary" size={20} />
                     <span className="font-semibold">Check-in/Check-out</span>
                   </div>
-                  <p className="text-gray-700">Check-in: {SHARED_POLICIES.checkIn}</p>
-                  <p className="text-gray-700">Check-out: {SHARED_POLICIES.checkOut}</p>
+                  <p className="text-gray-700 dark:text-gray-300">Check-in: {SHARED_POLICIES.checkIn}</p>
+                  <p className="text-gray-700 dark:text-gray-300">Check-out: {SHARED_POLICIES.checkOut}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <X className="text-primary" size={20} />
                     <span className="font-semibold">Cancellation</span>
                   </div>
-                  <p className="text-gray-700">{SHARED_POLICIES.cancellation}</p>
+                  <p className="text-gray-700 dark:text-gray-300">{SHARED_POLICIES.cancellation}</p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <ul className="space-y-2 text-gray-700">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <ul className="space-y-2 text-gray-700 dark:text-gray-300">
                   <li className="flex items-center gap-2">
                     <X size={16} className="text-red-500" /> {SHARED_POLICIES.smoking}
                   </li>
@@ -314,7 +314,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
               <h2 className="text-2xl font-heading font-semibold mb-6">Guest Reviews</h2>
               <div className="space-y-6">
                 {SHARED_REVIEWS.map((review, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-6 last:border-0">
+                  <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                         {review.name.charAt(0)}
@@ -323,7 +323,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                         <div className="flex items-center justify-between mb-2">
                           <div>
                             <h4 className="font-semibold">{review.name}</h4>
-                            <p className="text-sm text-gray-500">{review.date}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{review.date}</p>
                           </div>
                           <div className="flex gap-1">
                             {[...Array(review.rating)].map((_, i) => (
@@ -331,7 +331,7 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                             ))}
                           </div>
                         </div>
-                        <p className="text-gray-700">{review.comment}</p>
+                        <p className="text-gray-700 dark:text-gray-300">{review.comment}</p>
                       </div>
                     </div>
                   </div>
@@ -346,9 +346,9 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-4xl font-bold text-primary">{formatCurrency(roomInfo.price)}</span>
-                  <span className="text-gray-500 line-through">{formatCurrency(roomInfo.originalPrice)}</span>
+                  <span className="text-gray-500 dark:text-gray-400 line-through">{formatCurrency(roomInfo.originalPrice)}</span>
                 </div>
-                <p className="text-gray-600">per night (includes taxes)</p>
+                <p className="text-gray-600 dark:text-gray-400">per night (includes taxes)</p>
               </div>
 
               <div className="space-y-4 mb-6">
@@ -377,24 +377,24 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                 })()}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Guests</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Guests</label>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setGuests(g => Math.max(1, g - 1))}
                       disabled={guests <= 1}
-                      className="w-9 h-9 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-primary hover:bg-primary-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-9 h-9 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center hover:border-primary hover:bg-primary-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Minus size={15} />
                     </button>
-                    <span className="font-semibold text-gray-900 min-w-[80px] text-center">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100 min-w-[80px] text-center">
                       {guests} {guests === 1 ? 'Guest' : 'Guests'}
                     </span>
                     <button
                       type="button"
                       onClick={() => setGuests(g => Math.min(roomInfo.maxGuests, g + 1))}
                       disabled={guests >= roomInfo.maxGuests}
-                      className="w-9 h-9 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-primary hover:bg-primary-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-9 h-9 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center hover:border-primary hover:bg-primary-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Plus size={15} />
                     </button>
@@ -406,12 +406,12 @@ export default function RoomDetailsPage({ params: { slug } }: { params: { slug: 
                 Book Now
               </Button>
 
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
                 <p>Free cancellation within 24 hours</p>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-300">
-                <p className="text-sm text-gray-600 mb-3">Need help booking?</p>
+              <div className="mt-6 pt-6 border-t border-gray-300 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Need help booking?</p>
                 <Button variant="outline" size="md" className="w-full" onClick={() => router.push('/contact')}>
                   Contact Us
                 </Button>

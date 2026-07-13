@@ -127,7 +127,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-primary-light cursor-pointer'}
             ${isCheckIn || isCheckOut ? 'bg-primary text-white hover:bg-primary-dark' : ''}
             ${isInRange ? 'bg-primary-light text-primary' : ''}
-            ${!isDisabled && !isCheckIn && !isCheckOut && !isInRange ? 'text-gray-700' : ''}
+            ${!isDisabled && !isCheckIn && !isCheckOut && !isInRange ? 'text-gray-700 dark:text-gray-300' : ''}
           `}
         >
           {day}
@@ -144,7 +144,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <button
           onClick={prevMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronLeft size={20} />
         </button>
@@ -153,7 +153,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         </h3>
         <button
           onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronRight size={20} />
         </button>
@@ -164,7 +164,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         {daysOfWeek.map((day) => (
           <div
             key={day}
-            className="h-7 sm:h-10 flex items-center justify-center text-xs sm:text-sm font-semibold text-gray-600"
+            className="h-7 sm:h-10 flex items-center justify-center text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400"
           >
             {day}
           </div>
@@ -178,15 +178,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
       <div className="mt-6 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-primary rounded"></div>
-          <span className="text-gray-600">Selected</span>
+          <span className="text-gray-600 dark:text-gray-400">Selected</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-primary-light rounded"></div>
-          <span className="text-gray-600">In Range</span>
+          <span className="text-gray-600 dark:text-gray-400">In Range</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-gray-200 rounded"></div>
-          <span className="text-gray-600">Unavailable</span>
+          <span className="text-gray-600 dark:text-gray-400">Unavailable</span>
         </div>
       </div>
 
@@ -195,20 +195,20 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         <div className="mt-6 p-4 bg-primary-light rounded-lg">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Check-in</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Check-in</p>
               <p className="font-semibold">
                 {checkInDate ? checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Check-out</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Check-out</p>
               <p className="font-semibold">
                 {checkOutDate ? checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
               </p>
             </div>
           </div>
           {checkInDate && checkOutDate && (
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} night(s)
             </p>
           )}

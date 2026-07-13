@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Reveal } from '@/components/guest/Reveal';
+import { Magnetic } from '@/components/ui/Magnetic';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -45,21 +47,27 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Ambient glass blobs */}
+      <div className="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-float pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+
+      <div className="w-full max-w-md relative">
         {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4">
-            <span className="text-3xl font-bold text-primary">L</span>
+        <Reveal>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 glass-strong rounded-full mb-4">
+              <span className="text-3xl font-bold text-primary">L</span>
+            </div>
+            <h1 className="text-4xl font-heading font-bold text-white mb-2">Lodgify</h1>
+            <p className="text-gray-200">Hotel Management Platform</p>
           </div>
-          <h1 className="text-4xl font-heading font-bold text-white mb-2">Lodgify</h1>
-          <p className="text-gray-200">Hotel Management Platform</p>
-        </div>
+        </Reveal>
 
         {/* Login Card */}
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          <h2 className="text-2xl font-heading font-bold mb-2 text-gray-900">Admin Login</h2>
-          <p className="text-gray-600 mb-6">Enter your credentials to access the dashboard</p>
+        <Reveal delay={0.1} className="glass-strong rounded-2xl shadow-2xl p-8">
+          <h2 className="text-2xl font-heading font-bold mb-2 text-gray-900 dark:text-gray-100">Admin Login</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Enter your credentials to access the dashboard</p>
 
           {/* Error Alert */}
           {error && (
@@ -73,17 +81,17 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="admin@lodgify.com"
                 />
               </div>
@@ -91,23 +99,23 @@ export default function AdminLoginPage() {
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -119,9 +127,9 @@ export default function AdminLoginPage() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 border border-gray-300 rounded"
+                  className="w-4 h-4 border border-gray-300 dark:border-gray-600 rounded"
                 />
-                <span className="text-sm text-gray-700">Remember me</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">Remember me</span>
               </label>
               <a href="#" className="text-sm text-primary hover:underline font-medium">
                 Forgot password?
@@ -129,16 +137,18 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
+            <Magnetic strength={0.25}>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-primary to-primary-dark hover:shadow-lg hover:shadow-primary/40 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </Magnetic>
           </form>
 
-        </div>
+        </Reveal>
 
         {/* Footer */}
         <p className="text-center text-gray-300 text-sm mt-6">

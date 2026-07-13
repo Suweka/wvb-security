@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Image from 'next/image';
@@ -44,7 +44,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white animate-fadeIn">
       {/* Hero Section */}
       <section className="relative h-[500px] bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white overflow-hidden">
         <Image
@@ -84,19 +84,19 @@ export default function AboutPage() {
               <h2 className="text-4xl font-heading font-bold mb-6">
                 A Home Away From Home in the Hills
               </h2>
-              <p className="text-gray-700 mb-4 leading-relaxed">
+              <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                 White Vintage Bungalow is a family-run guest bungalow nestled in the
                 misty hills of Nuwara Eliya. Styled with timeless vintage character —
                 white facades, cosy interiors, and a lush private garden — it offers a
                 warm, personal alternative to the big hotels.
               </p>
-              <p className="text-gray-700 mb-4 leading-relaxed">
+              <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                 For more than a decade we&apos;ve welcomed travellers from Sri Lanka and
                 around the world, treating every guest like family. Home-style meals from
                 our in-house chef, evenings around the barbeque, and mornings with
                 mountain and tea-country views are what our guests remember most.
               </p>
-              <p className="text-gray-700 mb-6 leading-relaxed">
+              <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
                 Whether you&apos;re here for Gregory Lake, the tea trails, or simply the
                 cool hill-country air, our team makes sure your stay feels effortless
                 from check-in to farewell.
@@ -126,7 +126,7 @@ export default function AboutPage() {
       </section>
 
       {/* Our Values */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <div className="text-primary font-medium mb-2">OUR VALUES</div>
@@ -140,7 +140,7 @@ export default function AboutPage() {
                   <value.icon className="text-primary" size={32} />
                 </div>
                 <h3 className="text-xl font-heading font-semibold mb-3">{value.title}</h3>
-                <p className="text-gray-600">{value.description}</p>
+                <p className="text-gray-600 dark:text-gray-400">{value.description}</p>
               </div>
             ))}
           </div>
@@ -148,19 +148,19 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <div className="text-primary font-medium mb-2">OUR TEAM</div>
             <h2 className="text-4xl font-heading font-bold">Meet the People Behind Our Service</h2>
-            <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 mt-4 max-w-2xl mx-auto">
               Our dedicated team is committed to making your stay memorable
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {team.map((member, index) => (
-              <div key={index} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+              <div key={index} className="glass-card hover-lift rounded-2xl overflow-hidden">
                 <Image
                   src={member.image}
                   alt={member.name}
@@ -170,7 +170,7 @@ export default function AboutPage() {
                 />
                 <div className="p-6 text-center">
                   <h3 className="text-xl font-heading font-semibold mb-1">{member.name}</h3>
-                  <p className="text-gray-600">{member.position}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{member.position}</p>
                 </div>
               </div>
             ))}
@@ -204,7 +204,7 @@ export default function AboutPage() {
               <div key={index} className="text-center p-6 bg-primary-light rounded-lg">
                 <Award className="text-primary mx-auto mb-4" size={48} />
                 <h3 className="text-lg font-semibold mb-2">{highlight.title}</h3>
-                <p className="text-gray-600">{highlight.org}</p>
+                <p className="text-gray-600 dark:text-gray-400">{highlight.org}</p>
               </div>
             ))}
           </div>
@@ -240,7 +240,7 @@ export default function AboutPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-heading font-bold mb-4">Experience the White Vintage Charm</h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
             Book your stay and see why our guests keep coming back
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -46,10 +46,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
       {/* Content */}
       <div className="p-6 flex flex-col flex-1">
-        <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2">{name}</h3>
+        <h3 className="text-2xl font-heading font-bold text-gray-900 dark:text-gray-100 mb-2">{name}</h3>
         
         {/* Features */}
-        <div className="flex items-center gap-4 text-gray-600 text-sm mb-3">
+        <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400 text-sm mb-3">
           <div className="flex items-center gap-1">
             <Users size={16} />
             <span>{maxGuests} Guests</span>
@@ -60,7 +60,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           </div>
         </div>
 
-        <p className="text-gray-600 mb-4 line-clamp-2">{description}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{description}</p>
 
         {/* Amenities */}
         <div className="flex gap-3 mb-4">
@@ -76,7 +76,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         <div className="flex justify-between items-center pt-4 border-t mt-auto">
           <div>
             <span className="text-3xl font-bold text-primary">{formatCurrency(price)}</span>
-            <span className="text-gray-500 text-sm ml-1">/ night</span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm ml-1">/ night</span>
           </div>
           <Link href={`/rooms/${id}`}>
             <Button variant="primary" size="md">

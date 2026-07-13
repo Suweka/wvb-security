@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
@@ -22,7 +22,7 @@ const TABS = ['Overview', 'My Bookings', 'Saved Payments', 'Loyalty', 'Edit Prof
 
 const LOYALTY_TIERS = {
   BRONZE: { label: 'Bronze', color: 'text-amber-700', bg: 'bg-amber-100', next: 500 },
-  SILVER: { label: 'Silver', color: 'text-gray-500', bg: 'bg-gray-100', next: 1500 },
+  SILVER: { label: 'Silver', color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', next: 1500 },
   GOLD: { label: 'Gold', color: 'text-yellow-600', bg: 'bg-yellow-100', next: 3000 },
   PLATINUM: { label: 'Platinum', color: 'text-blue-600', bg: 'bg-blue-100', next: null },
 };
@@ -136,13 +136,13 @@ export default function ProfileClient({ user }: ProfileClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 text-center mb-4">
+            <div className="glass-card hover-lift rounded-2xl p-6 text-center mb-4">
               {/* Avatar */}
               <div className="relative inline-block mb-4">
                 {user.avatarUrl ? (
@@ -163,7 +163,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 </button>
               </div>
               <h2 className="font-bold text-lg">{user.name}</h2>
-              <p className="text-gray-500 text-sm">{user.email}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</p>
 
               {/* Loyalty Badge */}
               <div className={`mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${tier.bg} ${tier.color}`}>
@@ -174,9 +174,9 @@ export default function ProfileClient({ user }: ProfileClientProps) {
               {/* Points */}
               <div className="mt-4 p-3 bg-light-green rounded-lg">
                 <div className="text-2xl font-bold text-primary">{user.loyaltyPoints}</div>
-                <div className="text-xs text-gray-600">Loyalty Points</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Loyalty Points</div>
                 {tier.next && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {tier.next - user.loyaltyPoints} pts to next tier
                   </div>
                 )}
@@ -184,7 +184,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
             </div>
 
             {/* Navigation */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="glass-card hover-lift rounded-2xl overflow-hidden">
               {TABS.map((tab) => (
                 <button
                   key={tab}
@@ -192,7 +192,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   className={`w-full text-left px-4 py-3 text-sm font-medium transition border-l-4 ${
                     activeTab === tab
                       ? 'border-primary bg-light-green text-primary'
-                      : 'border-transparent hover:bg-gray-50 text-gray-700'
+                      : 'border-transparent hover:bg-white/60 dark:hover:bg-white/10 transition-colors text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {tab}
@@ -221,26 +221,26 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                     { label: 'Loyalty Points', value: user.loyaltyPoints, icon: Star },
                     { label: 'Reviews', value: user.reviews?.length || 0, icon: Award },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-lg shadow-md p-6 text-center">
+                    <div key={stat.label} className="glass-card hover-lift rounded-2xl p-6 text-center">
                       <stat.icon size={32} className="mx-auto text-primary mb-2" />
                       <div className="text-3xl font-bold text-primary">{stat.value}</div>
-                      <div className="text-sm text-gray-600 mt-1">{stat.label}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stat.label}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Recent Bookings */}
-                <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="glass-card hover-lift rounded-2xl p-6">
                   <h3 className="font-bold text-lg mb-4">Recent Bookings</h3>
                   {user.bookings.slice(0, 3).length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No bookings yet</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No bookings yet</p>
                   ) : (
                     <div className="space-y-3">
                       {user.bookings.slice(0, 3).map((booking: any) => (
                         <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition">
                           <div>
                             <p className="font-medium">{booking.room?.name || 'Room'}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               {new Date(booking.checkIn).toLocaleDateString()} → {new Date(booking.checkOut).toLocaleDateString()}
                             </p>
                           </div>
@@ -264,12 +264,12 @@ export default function ProfileClient({ user }: ProfileClientProps) {
 
             {/* My Bookings Tab */}
             {activeTab === 'My Bookings' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="glass-card hover-lift rounded-2xl p-6">
                 <h3 className="font-bold text-lg mb-4">All Bookings</h3>
                 {user.bookings.length === 0 ? (
                   <div className="text-center py-12">
                     <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 mb-4">You haven't made any bookings yet</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't made any bookings yet</p>
                     <a href="/booking" className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:opacity-90 transition">
                       Book Now
                     </a>
@@ -285,15 +285,15 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                         <div className="flex justify-between items-start flex-wrap gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-lg">{booking.room?.name || 'Room'}</p>
-                            <p className="text-sm text-gray-500 mb-2">Ref: <span className="font-mono text-primary">{booking.bookingNumber}</span></p>
-                            <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-3">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Ref: <span className="font-mono text-primary">{booking.bookingNumber}</span></p>
+                            <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
                               <span>Check-in: <strong>{new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
                               <span>Check-out: <strong>{new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></span>
                               <span>{booking.guests} guest{booking.guests > 1 ? 's' : ''}</span>
                             </div>
                             {/* Payment badges */}
                             <div className="flex flex-wrap gap-2 text-xs">
-                              <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
+                              <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium">
                                 {booking.paymentMethod === 'bank' ? 'Bank Transfer'
                                   : booking.paymentMethod === 'card' ? 'Credit/Debit Card'
                                   : booking.paymentMethod === 'helapay' ? 'HelaPay'
@@ -376,14 +376,14 @@ export default function ProfileClient({ user }: ProfileClientProps) {
 
             {/* Saved Payments Tab */}
             {activeTab === 'Saved Payments' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="glass-card hover-lift rounded-2xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg">Saved Payment Methods</h3>
                   <button className="text-sm text-primary hover:underline font-medium">+ Add New</button>
                 </div>
 
                 {user.savedPayments.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
+                  <div className="text-center py-12 text-gray-400 dark:text-gray-500">
                     <CreditCard size={48} className="mx-auto mb-4" />
                     <p className="mb-2">No saved payment methods</p>
                     <p className="text-sm">Add a payment method for faster checkout</p>
@@ -396,7 +396,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                           <CreditCard size={22} className="text-primary" />
                           <div>
                             <p className="font-medium">{pm.label}</p>
-                            <p className="text-xs text-gray-500">{pm.type}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{pm.type}</p>
                           </div>
                           {pm.isDefault && (
                             <span className="text-xs bg-light-green text-primary px-2 py-0.5 rounded-full font-medium">
@@ -414,11 +414,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
 
             {/* Loyalty Tab */}
             {activeTab === 'Loyalty' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="glass-card hover-lift rounded-2xl p-6">
                 <h3 className="font-bold text-lg mb-6">Loyalty Rewards</h3>
 
                 {/* Tier progress */}
-                <div className="relative flex justify-between mb-2 text-xs font-medium text-gray-500">
+                <div className="relative flex justify-between mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
                   {['BRONZE', 'SILVER', 'GOLD', 'PLATINUM'].map(t => (
                     <span key={t} className={user.loyaltyTier === t ? 'text-primary font-bold' : ''}>
                       {t}
@@ -437,13 +437,13 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-light-green p-6 rounded-xl text-center">
                     <div className="text-4xl font-bold text-primary">{user.loyaltyPoints}</div>
-                    <div className="text-sm text-gray-600 mt-1">Total Points</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Points</div>
                   </div>
                   <div className="bg-accent/20 p-6 rounded-xl text-center">
                     <div className="text-4xl font-bold text-yellow-700">
                       {user.loyaltyTier}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">Current Tier</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Current Tier</div>
                   </div>
                 </div>
 
@@ -452,7 +452,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                     <Star size={20} className="text-primary" />
                     How to Earn Points
                   </h4>
-                  <ul className="space-y-3 text-sm text-gray-700">
+                  <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                     <li className="flex items-start gap-3">
                       <span className="text-2xl">🛏</span>
                       <span>Each night booked = <strong className="text-primary">50 points</strong></span>
@@ -476,55 +476,55 @@ export default function ProfileClient({ user }: ProfileClientProps) {
 
             {/* Edit Profile Tab */}
             {activeTab === 'Edit Profile' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="glass-card hover-lift rounded-2xl p-6">
                 <h3 className="font-bold text-lg mb-6">Edit Profile</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                       <input
                         type="text"
                         value={profileForm.name}
                         onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                       <input
                         type="email"
                         value={user.email || ''}
                         disabled
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                       <input
                         type="tel"
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
                     <select
                       value={profileForm.country}
                       onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="">Select Country</option>
                       <option value="LK">Sri Lanka</option>
@@ -536,14 +536,14 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <MapPin className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" size={18} />
                       <textarea
                         value={profileForm.address}
                         onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
                         rows={3}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                       />
                     </div>
                   </div>
@@ -576,13 +576,13 @@ export default function ProfileClient({ user }: ProfileClientProps) {
       {/* Review Modal */}
       {reviewBooking && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-heading font-bold">Leave a Review</h2>
-                <p className="text-sm text-gray-500 mt-0.5">{reviewBooking.room?.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{reviewBooking.room?.name}</p>
               </div>
-              <button onClick={() => setReviewBooking(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setReviewBooking(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
@@ -590,7 +590,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
             <div className="p-6 space-y-5">
               {/* Star picker */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Your Rating *</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Rating *</p>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(n => (
                     <button
@@ -612,7 +612,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   ))}
                 </div>
                 {reviewRating > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
                   </p>
                 )}
@@ -620,13 +620,13 @@ export default function ProfileClient({ user }: ProfileClientProps) {
 
               {/* Comment */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Review</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Review</label>
                 <textarea
                   rows={4}
                   placeholder="Tell us about your stay..."
                   value={reviewComment}
                   onChange={e => setReviewComment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm"
                 />
               </div>
 
@@ -643,7 +643,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
             <div className="p-6 border-t flex gap-3">
               <button
                 onClick={() => setReviewBooking(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
               >
                 Cancel
               </button>

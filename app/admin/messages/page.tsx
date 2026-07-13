@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Trash2, Archive, Star, Clock, Loader2, AlertCircle, Send, X } from 'lucide-react';
@@ -24,7 +24,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   general:   'bg-green-100 text-green-700',
   complaint: 'bg-red-100 text-red-700',
   feedback:  'bg-purple-100 text-purple-700',
-  other:     'bg-gray-100 text-gray-700',
+  other:     'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
 };
 
 export default function MessagesPage() {
@@ -150,17 +150,17 @@ export default function MessagesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <AlertCircle className="text-red-500" size={40} />
-        <p className="text-gray-600">Failed to load messages.</p>
+        <p className="text-gray-600 dark:text-gray-400">Failed to load messages.</p>
         <button onClick={fetchMessages} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-3xl font-heading font-bold mb-2">Messages</h1>
-        <p className="text-gray-600">Manage guest inquiries and communications</p>
+        <p className="text-gray-600 dark:text-gray-400">Manage guest inquiries and communications</p>
       </div>
 
       {actionMsg && !selected && (
@@ -170,22 +170,22 @@ export default function MessagesPage() {
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="glass-card hover-lift rounded-2xl p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <input
               type="text"
               placeholder="Search by name, subject, or email"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value as MessageStatus | 'all')}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">All Messages</option>
             <option value="UNREAD">Unread</option>
@@ -199,8 +199,8 @@ export default function MessagesPage() {
         {/* List */}
         <div className="lg:col-span-2 space-y-4">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <p className="text-gray-500">{messages.length === 0 ? 'No messages yet. Submissions from the contact form will appear here.' : 'No messages match your search.'}</p>
+            <div className="text-center py-12 glass-card hover-lift rounded-2xl">
+              <p className="text-gray-500 dark:text-gray-400">{messages.length === 0 ? 'No messages yet. Submissions from the contact form will appear here.' : 'No messages match your search.'}</p>
             </div>
           ) : filtered.map(msg => (
             <div
@@ -210,8 +210,8 @@ export default function MessagesPage() {
                 msg.status === 'UNREAD'
                   ? 'bg-blue-50 border-primary'
                   : msg.status === 'ARCHIVED'
-                  ? 'bg-gray-50 border-gray-200 opacity-70 hover:opacity-100'
-                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                  ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 opacity-70 hover:opacity-100'
+                  : 'bg-white border-gray-200 dark:border-gray-700 hover:bg-white/60 dark:hover:bg-white/10 transition-colors'
               }`}
             >
               <div className="flex items-start justify-between mb-2">
@@ -221,12 +221,12 @@ export default function MessagesPage() {
                     {msg.status === 'UNREAD' && <div className="w-2 h-2 bg-primary rounded-full" />}
                     {msg.adminReply && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Replied</span>}
                   </div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-1 capitalize">{msg.subject.replace('_', ' ')}</h4>
-                  <p className="text-sm text-gray-600 line-clamp-1">{msg.message}</p>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1 capitalize">{msg.subject.replace('_', ' ')}</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{msg.message}</p>
                 </div>
                 <button
                   onClick={e => handleStar(e, msg)}
-                  className={`p-1 rounded-lg transition-colors flex-shrink-0 ${msg.starred ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 hover:text-yellow-500'}`}
+                  className={`p-1 rounded-lg transition-colors flex-shrink-0 ${msg.starred ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 dark:text-gray-500 hover:text-yellow-500'}`}
                 >
                   <Star size={18} fill={msg.starred ? 'currentColor' : 'none'} />
                 </button>
@@ -235,7 +235,7 @@ export default function MessagesPage() {
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${CATEGORY_COLORS[msg.subject] ?? CATEGORY_COLORS.other}`}>
                   {msg.subject.charAt(0).toUpperCase() + msg.subject.slice(1)}
                 </span>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <Clock size={14} />
                   {new Date(msg.createdAt).toLocaleDateString()}
                 </div>
@@ -246,22 +246,22 @@ export default function MessagesPage() {
 
         {/* Detail Panel */}
         {selected && (
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24 max-h-[85vh] overflow-y-auto">
+          <div className="glass-card hover-lift rounded-2xl p-6 sticky top-24 max-h-[85vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-4 pb-4 border-b">
               <div>
                 <h3 className="text-lg font-semibold">{selected.firstName}</h3>
-                <p className="text-sm text-gray-600">{selected.email}</p>
-                {selected.phone && <p className="text-sm text-gray-500">{selected.phone}</p>}
+                <p className="text-sm text-gray-600 dark:text-gray-400">{selected.email}</p>
+                {selected.phone && <p className="text-sm text-gray-500 dark:text-gray-400">{selected.phone}</p>}
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
 
             <div className="mb-4">
               <h4 className="font-semibold mb-1 capitalize">{selected.subject.replace('_', ' ')}</h4>
-              <p className="text-xs text-gray-500 mb-3">{new Date(selected.createdAt).toLocaleString()}</p>
-              <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{new Date(selected.createdAt).toLocaleString()}</p>
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                 {selected.message}
               </div>
             </div>
@@ -269,19 +269,19 @@ export default function MessagesPage() {
             {selected.adminReply ? (
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-xs text-green-700 font-medium mb-1">
-                  Your Reply · {selected.repliedAt ? new Date(selected.repliedAt).toLocaleDateString() : ''}
+                  Your Reply Â· {selected.repliedAt ? new Date(selected.repliedAt).toLocaleDateString() : ''}
                 </p>
                 <p className="text-sm text-green-900">{selected.adminReply}</p>
               </div>
             ) : (
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Write a Reply</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Write a Reply</p>
                 <textarea
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   placeholder="Type your reply..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
                 />
                 <button
                   onClick={handleReply}
@@ -295,13 +295,13 @@ export default function MessagesPage() {
             )}
 
             {actionMsg && (
-              <p className="text-xs text-center text-gray-600 mb-2">{actionMsg}</p>
+              <p className="text-xs text-center text-gray-600 dark:text-gray-400 mb-2">{actionMsg}</p>
             )}
 
             <div className="space-y-2">
               <button
                 onClick={handleArchive}
-                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors flex items-center justify-center gap-2"
               >
                 <Archive size={18} /> Archive
               </button>
@@ -324,8 +324,8 @@ export default function MessagesPage() {
           { label: 'Complaints',     value: messages.filter(m => m.subject === 'complaint').length,   color: 'text-red-600' },
           { label: 'Starred',        value: messages.filter(m => m.starred).length,                   color: 'text-yellow-600' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-lg shadow-md p-6">
-            <p className="text-gray-600 text-sm mb-2">{s.label}</p>
+          <div key={s.label} className="glass-card hover-lift rounded-2xl p-6">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{s.label}</p>
             <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -10,29 +10,29 @@ function CancelContent() {
   const ref = searchParams.get('ref') || '—';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 flex items-center justify-center px-4 py-16">
+      <div className="glass-strong rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
         <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <XCircle className="text-red-500" size={44} />
         </div>
 
         <h1 className="text-3xl font-heading font-bold mb-3">Payment Cancelled</h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
           Your payment was not completed. Your booking has been placed on hold — no charge was made.
         </p>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 mb-8 text-left space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Booking Reference</span>
+            <span className="text-gray-500 dark:text-gray-400">Booking Reference</span>
             <span className="font-semibold">{ref}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Status</span>
+            <span className="text-gray-500 dark:text-gray-400">Status</span>
             <span className="font-semibold text-yellow-600">Payment Pending</span>
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
           You can retry payment or contact us to pay via bank transfer. Your booking reference is valid for 24 hours.
         </p>
 

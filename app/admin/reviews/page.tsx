@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Star, Trash2, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
@@ -93,31 +93,31 @@ export default function ReviewsPage() {
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <AlertCircle className="text-red-500" size={40} />
-      <p className="text-gray-600">Failed to load reviews.</p>
+      <p className="text-gray-600 dark:text-gray-400">Failed to load reviews.</p>
       <button onClick={fetchReviews} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
     </div>
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen animate-fadeIn">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold mb-2">Reviews</h1>
-          <p className="text-gray-600">Manage guest reviews and ratings</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage guest reviews and ratings</p>
         </div>
-        <button onClick={fetchReviews} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+        <button onClick={fetchReviews} className="text-sm flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary">
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('internal')}
           className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
             activeTab === 'internal'
               ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200'
           }`}
         >
           Internal Reviews
@@ -127,7 +127,7 @@ export default function ReviewsPage() {
           className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
             activeTab === 'google'
               ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
+              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:text-gray-200'
           }`}
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
@@ -141,8 +141,8 @@ export default function ReviewsPage() {
       </div>
 
       {activeTab === 'google' && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-500 mb-6">Live reviews pulled from your Google Business Profile via Elfsight.</p>
+        <div className="glass-card hover-lift rounded-2xl p-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Live reviews pulled from your Google Business Profile via Elfsight.</p>
           <GoogleReviewsWidget />
         </div>
       )}
@@ -156,12 +156,12 @@ export default function ReviewsPage() {
       {activeTab === 'internal' && <>
       {/* Rating Summary */}
       {reviews.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="glass-card hover-lift rounded-2xl p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-5xl font-bold text-primary mb-2">{avgRating}</div>
               <Stars rating={Math.round(parseFloat(avgRating))} size={20} />
-              <p className="text-sm text-gray-600 mt-2">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="md:col-span-2 space-y-2">
               {dist.map(({ n, count }) => (
@@ -182,22 +182,22 @@ export default function ReviewsPage() {
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="glass-card hover-lift rounded-2xl p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <input
               type="text"
               placeholder="Search by guest, room, or content"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <select
             value={filterRating}
             onChange={e => setFilterRating(e.target.value === 'all' ? 'all' : Number(e.target.value) as ReviewRating)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="all">All Ratings</option>
             {[5, 4, 3, 2, 1].map(n => (
@@ -211,8 +211,8 @@ export default function ReviewsPage() {
         {/* List */}
         <div className="lg:col-span-2 space-y-4">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <p className="text-gray-500">
+            <div className="text-center py-12 glass-card hover-lift rounded-2xl">
+              <p className="text-gray-500 dark:text-gray-400">
                 {reviews.length === 0
                   ? 'No reviews yet. Reviews submitted by guests will appear here.'
                   : 'No reviews match your search.'}
@@ -222,20 +222,20 @@ export default function ReviewsPage() {
             <div
               key={review.id}
               onClick={() => { setSelected(review); setActionMsg(''); }}
-              className={`bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow ${selected?.id === review.id ? 'ring-2 ring-primary' : ''}`}
+              className={`glass-card hover-lift rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-shadow ${selected?.id === review.id ? 'ring-2 ring-primary' : ''}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold">{review.guestName}</h3>
-                  <p className="text-sm text-gray-500">{review.room}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{review.room}</p>
                 </div>
-                <span className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="mb-3">
                 <Stars rating={review.rating} />
               </div>
               {review.comment && (
-                <p className="text-gray-700 text-sm line-clamp-2">{review.comment}</p>
+                <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-2">{review.comment}</p>
               )}
             </div>
           ))}
@@ -243,30 +243,30 @@ export default function ReviewsPage() {
 
         {/* Detail Panel */}
         {selected && (
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+          <div className="glass-card hover-lift rounded-2xl p-6 sticky top-24">
             <div className="flex items-start justify-between mb-4 pb-4 border-b">
               <div>
                 <h3 className="text-lg font-semibold">{selected.guestName}</h3>
-                <p className="text-sm text-gray-500">{selected.room}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{selected.room}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
 
             <div className="mb-4">
               <Stars rating={selected.rating} size={20} />
-              <p className="text-xs text-gray-500 mt-1">{new Date(selected.createdAt).toLocaleDateString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(selected.createdAt).toLocaleDateString()}</p>
             </div>
 
             {selected.comment && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-700">
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-700 dark:text-gray-300">
                 {selected.comment}
               </div>
             )}
 
             {actionMsg && (
-              <p className="text-xs text-center text-gray-600 mb-3">{actionMsg}</p>
+              <p className="text-xs text-center text-gray-600 dark:text-gray-400 mb-3">{actionMsg}</p>
             )}
 
             <button

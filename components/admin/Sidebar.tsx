@@ -75,20 +75,20 @@ export const AdminSidebar = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-white shadow-lg z-40 transition-transform duration-300 ${
+        className={`fixed left-0 top-0 h-full glass-strong shadow-2xl z-40 transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
         style={{ width: '260px' }}
       >
         {/* Logo */}
-        <div className="p-6 border-b">
+        <div className="p-6 border-b border-white/50">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
               <span className="text-white font-bold text-xl">L</span>
             </div>
             <div>
-              <h1 className="text-lg font-heading font-bold text-gray-900">Lodgify</h1>
-              <p className="text-xs text-gray-500">V1.0</p>
+              <h1 className="text-lg font-heading font-bold text-gray-900 dark:text-gray-100">Lodgify</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">V1.0</p>
             </div>
           </div>
         </div>
@@ -102,17 +102,17 @@ export const AdminSidebar = () => {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                       isActive
-                        ? 'bg-primary text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/30'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 hover:translate-x-0.5'
                     }`}
                     onClick={() => setIsOpen(false)}
                   >
                     <item.icon size={20} />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
-                      <span className="w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      <span className="w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
                         {item.badge}
                       </span>
                     )}
@@ -124,18 +124,18 @@ export const AdminSidebar = () => {
         </nav>
 
         {/* User Profile (logout lives in the top navbar) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/50 glass-card">
           <div className="flex items-center gap-3">
             <Image
               src="/images/avatars/admin.jpg"
               alt="Admin User"
               width={40}
               height={40}
-              className="rounded-full object-cover"
+              className="rounded-full object-cover ring-2 ring-white/70"
             />
             <div className="flex-1">
               <h4 className="font-semibold text-sm">{user?.name || 'Admin'}</h4>
-              <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'Admin'}</p>
             </div>
           </div>
         </div>

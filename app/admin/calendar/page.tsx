@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -84,31 +84,31 @@ export default function CalendarPage() {
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <AlertCircle className="text-red-500" size={40} />
-      <p className="text-gray-600">Failed to load calendar data.</p>
+      <p className="text-gray-600 dark:text-gray-400">Failed to load calendar data.</p>
       <button onClick={fetchBookings} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
     </div>
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen animate-fadeIn">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold mb-2">Calendar</h1>
-          <p className="text-gray-600">View bookings and check-in/check-out events</p>
+          <p className="text-gray-600 dark:text-gray-400">View bookings and check-in/check-out events</p>
         </div>
-        <button onClick={fetchBookings} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+        <button onClick={fetchBookings} className="text-sm flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary">
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendar */}
-        <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
+        <div className="lg:col-span-3 glass-card hover-lift rounded-2xl p-6">
           {/* Navigation */}
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => setCurrentDate(new Date(year, month - 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
             >
               <ChevronLeft size={24} />
             </button>
@@ -117,7 +117,7 @@ export default function CalendarPage() {
             </h2>
             <button
               onClick={() => setCurrentDate(new Date(year, month + 1))}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
             >
               <ChevronRight size={24} />
             </button>
@@ -126,7 +126,7 @@ export default function CalendarPage() {
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-1">
             {dayNames.map(d => (
-              <div key={d} className="text-center font-semibold text-gray-600 py-2 text-sm">{d}</div>
+              <div key={d} className="text-center font-semibold text-gray-600 dark:text-gray-400 py-2 text-sm">{d}</div>
             ))}
           </div>
 
@@ -146,10 +146,10 @@ export default function CalendarPage() {
                       ? 'border-primary bg-primary-light'
                       : dayBooks.length > 0
                       ? 'border-accent bg-accent-light'
-                      : 'border-gray-100 bg-white hover:border-gray-300'
+                      : 'border-gray-100 bg-white hover:border-gray-300 dark:border-gray-600'
                   }`}
                 >
-                  <p className={`text-xs font-semibold mb-1 ${isToday ? 'text-primary' : 'text-gray-700'}`}>
+                  <p className={`text-xs font-semibold mb-1 ${isToday ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>
                     {date.getDate()}
                   </p>
                   <div className="space-y-0.5">
@@ -160,7 +160,7 @@ export default function CalendarPage() {
                       </p>
                     ))}
                     {dayBooks.length > 2 && (
-                      <p className="text-[10px] text-gray-500">+{dayBooks.length - 2} more</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">+{dayBooks.length - 2} more</p>
                     )}
                   </div>
                 </div>
@@ -172,21 +172,21 @@ export default function CalendarPage() {
           <div className="mt-6 pt-4 border-t flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-primary rounded bg-primary-light" />
-              <span className="text-sm text-gray-600">Today</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Today</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-accent rounded bg-accent-light" />
-              <span className="text-sm text-gray-600">Active Booking</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Active Booking</span>
             </div>
           </div>
         </div>
 
         {/* Upcoming Check-ins */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+          <div className="glass-card hover-lift rounded-2xl p-6 sticky top-24">
             <h3 className="text-lg font-semibold mb-4">Upcoming Check-ins</h3>
             {upcoming.length === 0 ? (
-              <p className="text-sm text-gray-500">No upcoming bookings.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming bookings.</p>
             ) : (
               <div className="space-y-3">
                 {upcoming.map((b, i) => (
@@ -194,9 +194,9 @@ export default function CalendarPage() {
                     key={b.id}
                     className={`p-3 rounded-lg border-l-4 ${eventColors[i % eventColors.length]}`}
                   >
-                    <p className="font-semibold text-xs text-gray-800">{b.checkIn}</p>
-                    <p className="text-xs text-gray-700 mt-0.5 truncate">{b.guestName}</p>
-                    <p className="text-xs text-gray-500 truncate">{b.room}</p>
+                    <p className="font-semibold text-xs text-gray-800 dark:text-gray-200">{b.checkIn}</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5 truncate">{b.guestName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{b.room}</p>
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${
                       b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                     }`}>

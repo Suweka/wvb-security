@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { Search, Plus, Eye, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink, X, Pencil } from 'lucide-react';
@@ -156,7 +156,7 @@ function ReservationsContent() {
       case 'confirmed': return 'bg-green-100 text-green-700';
       case 'pending':   return 'bg-yellow-100 text-yellow-700';
       case 'cancelled': return 'bg-red-100 text-red-700';
-      default:          return 'bg-gray-100 text-gray-700';
+      default:          return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
     }
   };
 
@@ -164,20 +164,20 @@ function ReservationsContent() {
   if (error)   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <AlertCircle className="text-red-500" size={40} />
-      <p className="text-gray-600">Failed to load reservations data.</p>
+      <p className="text-gray-600 dark:text-gray-400">Failed to load reservations data.</p>
       <button onClick={fetchReservations} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
     </div>
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen animate-fadeIn">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold mb-2">Reservations</h1>
-          <p className="text-gray-600">Manage all guest reservations</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage all guest reservations</p>
         </div>
-        <button onClick={fetchReservations} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+        <button onClick={fetchReservations} className="text-sm flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary">
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
@@ -207,17 +207,17 @@ function ReservationsContent() {
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="glass-card rounded-2xl p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <input type="text" placeholder="Search by guest name, email, or booking ID"
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div className="flex gap-2">
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as ReservationStatus | 'all')}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
               <option value="all">All Status</option>
               <option value="confirmed">Confirmed</option>
               <option value="pending">Pending</option>
@@ -231,33 +231,33 @@ function ReservationsContent() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Booking ID</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Guest</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Room</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Dates</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Amount</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+              <tr className="bg-gray-50 dark:bg-gray-900 border-b">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Booking ID</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Guest</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Room</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Dates</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Amount</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredReservations.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   {reservations.length === 0 ? 'No reservations yet.' : 'No reservations match your search.'}
                 </td></tr>
               ) : filteredReservations.map((res) => (
-                <tr key={res.id} className="border-b hover:bg-gray-50">
+                <tr key={res.id} className="border-b hover:bg-white/60 dark:hover:bg-white/10 transition-colors">
                   <td className="px-6 py-4">
                     <span className="font-semibold text-primary text-sm">{res.id}</span>
                     {res.paymentMethod === 'bank' && (
                       <div className="mt-1">
                         {!res.receipt
-                          ? <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Awaiting receipt</span>
+                          ? <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">Awaiting receipt</span>
                           : res.receipt.status === 'PENDING'
                           ? <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">Receipt pending review</span>
                           : res.receipt.status === 'APPROVED'
@@ -269,15 +269,15 @@ function ReservationsContent() {
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-medium">{res.guestName}</p>
-                    <p className="text-sm text-gray-500">{res.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{res.email}</p>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-sm">{res.room}</p>
-                    <p className="text-xs text-gray-500">{res.guests} guest{res.guests > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{res.guests} guest{res.guests > 1 ? 's' : ''}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-700">{res.checkIn} → {res.checkOut}</p>
-                    <p className="text-xs text-gray-500">{res.nights} night{res.nights > 1 ? 's' : ''}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{res.checkIn} → {res.checkOut}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{res.nights} night{res.nights > 1 ? 's' : ''}</p>
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-semibold">LKR {res.amount.toLocaleString()}</span>
@@ -331,8 +331,8 @@ function ReservationsContent() {
           { label: 'Pending',            value: reservations.filter(r => r.status === 'pending').length,    color: 'text-yellow-600' },
           { label: 'Total Revenue',      value: `LKR ${reservations.filter(r => r.status === 'confirmed').reduce((s, r) => s + r.amount, 0).toLocaleString()}`, color: 'text-primary' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-lg shadow-md p-6">
-            <p className="text-gray-600 text-sm mb-2">{s.label}</p>
+          <div key={s.label} className="glass-card hover-lift rounded-2xl p-6">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{s.label}</p>
             <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -341,32 +341,32 @@ function ReservationsContent() {
       {/* Receipt Review Modal */}
       {selectedReceipt && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-heading font-bold">Review Bank Transfer Receipt</h2>
-              <button onClick={() => { setSelectedReceipt(null); setReviewMessage(''); }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setSelectedReceipt(null); setReviewMessage(''); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <XCircle size={24} />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-2">
-                <p className="font-semibold text-gray-700 mb-2">Booking Details</p>
-                <div className="flex justify-between"><span className="text-gray-500">Booking Ref</span><span className="font-semibold text-primary">{selectedReceipt.id}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Guest</span><span>{selectedReceipt.guestName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Email</span><span>{selectedReceipt.email}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Room</span><span>{selectedReceipt.room}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Dates</span><span>{selectedReceipt.checkIn} → {selectedReceipt.checkOut}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Booking Amount</span><span className="font-bold">LKR {selectedReceipt.amount.toLocaleString()}</span></div>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-sm space-y-2">
+                <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Booking Details</p>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Booking Ref</span><span className="font-semibold text-primary">{selectedReceipt.id}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guest</span><span>{selectedReceipt.guestName}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Email</span><span>{selectedReceipt.email}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Room</span><span>{selectedReceipt.room}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Dates</span><span>{selectedReceipt.checkIn} → {selectedReceipt.checkOut}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Booking Amount</span><span className="font-bold">LKR {selectedReceipt.amount.toLocaleString()}</span></div>
               </div>
 
               {selectedReceipt.receipt ? (
                 <div className="border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm space-y-2">
                   <p className="font-semibold text-orange-800 mb-2">Customer Submitted Receipt</p>
-                  <div className="flex justify-between"><span className="text-gray-600">Transaction Ref</span><span className="font-mono font-medium">{selectedReceipt.receipt.transactionRef || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Transfer Date</span><span>{selectedReceipt.receipt.transferDate || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Transaction Ref</span><span className="font-mono font-medium">{selectedReceipt.receipt.transactionRef || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Transfer Date</span><span>{selectedReceipt.receipt.transferDate || '—'}</span></div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Amount Paid</span>
+                    <span className="text-gray-600 dark:text-gray-400">Amount Paid</span>
                     <span className={`font-bold ${selectedReceipt.receipt.amountPaid && selectedReceipt.receipt.amountPaid < selectedReceipt.amount ? 'text-red-600' : 'text-green-700'}`}>
                       LKR {selectedReceipt.receipt.amountPaid?.toLocaleString() || '—'}
                       {selectedReceipt.receipt.amountPaid && selectedReceipt.receipt.amountPaid < selectedReceipt.amount && ' ⚠ Less than required'}
@@ -374,7 +374,7 @@ function ReservationsContent() {
                   </div>
                   {selectedReceipt.receipt.notes && (
                     <div className="pt-2 border-t border-orange-200">
-                      <span className="text-gray-600">Notes: </span>{selectedReceipt.receipt.notes}
+                      <span className="text-gray-600 dark:text-gray-400">Notes: </span>{selectedReceipt.receipt.notes}
                     </div>
                   )}
                   {selectedReceipt.receipt.receiptUrl && (
@@ -385,7 +385,7 @@ function ReservationsContent() {
                   )}
                 </div>
               ) : (
-                <div className="bg-gray-100 rounded-lg p-4 text-sm text-gray-500 text-center">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-sm text-gray-500 dark:text-gray-400 text-center">
                   Customer has not submitted a receipt yet.
                 </div>
               )}
@@ -418,30 +418,30 @@ function ReservationsContent() {
       {/* View Detail Modal */}
       {viewDetail && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Booking Details</h2>
-              <button onClick={() => setViewDetail(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setViewDetail(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Booking Ref</span><span className="font-semibold text-primary">{viewDetail.id}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Guest</span><span className="font-medium">{viewDetail.guestName}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Email</span><span>{viewDetail.email}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span>{viewDetail.phone || '—'}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Room</span><span>{viewDetail.room}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Guests</span><span>{viewDetail.guests}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Check-in</span><span>{viewDetail.checkIn}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Check-out</span><span>{viewDetail.checkOut}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Nights</span><span>{viewDetail.nights}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Payment</span><span className="capitalize">{viewDetail.paymentMethod || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Booking Ref</span><span className="font-semibold text-primary">{viewDetail.id}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guest</span><span className="font-medium">{viewDetail.guestName}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Email</span><span>{viewDetail.email}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Phone</span><span>{viewDetail.phone || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Room</span><span>{viewDetail.room}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guests</span><span>{viewDetail.guests}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Check-in</span><span>{viewDetail.checkIn}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Check-out</span><span>{viewDetail.checkOut}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Nights</span><span>{viewDetail.nights}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Payment</span><span className="capitalize">{viewDetail.paymentMethod || '—'}</span></div>
               <div className="flex justify-between border-t pt-3 mt-3">
-                <span className="text-gray-500">Total Amount</span>
+                <span className="text-gray-500 dark:text-gray-400">Total Amount</span>
                 <span className="font-bold text-lg">LKR {viewDetail.amount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Status</span>
+                <span className="text-gray-500 dark:text-gray-400">Status</span>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                   viewDetail.status === 'confirmed' ? 'bg-green-100 text-green-700' :
                   viewDetail.status === 'pending'   ? 'bg-yellow-100 text-yellow-700' :
@@ -480,20 +480,20 @@ function ReservationsContent() {
       {/* Edit Reservation Modal */}
       {editTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Edit Reservation — {editTarget.id}</h2>
-              <button onClick={() => setEditTarget(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setEditTarget(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room</label>
                 <select
                   value={editForm.roomId}
                   onChange={(e) => setEditForm(f => ({ ...f, roomId: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {rooms.map(r => (
                     <option key={r.id} value={r.id}>{r.name} — LKR {r.price.toLocaleString()}/night</option>
@@ -502,32 +502,32 @@ function ReservationsContent() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Check-in</label>
                   <input
                     type="date"
                     value={editForm.checkIn}
                     onChange={(e) => setEditForm(f => ({ ...f, checkIn: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-out</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Check-out</label>
                   <input
                     type="date"
                     value={editForm.checkOut}
                     onChange={(e) => setEditForm(f => ({ ...f, checkOut: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Guests</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Guests</label>
                 <input
                   type="number"
                   min={1}
                   value={editForm.guests}
                   onChange={(e) => setEditForm(f => ({ ...f, guests: Number(e.target.value) }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               {editError && (
@@ -537,7 +537,7 @@ function ReservationsContent() {
             <div className="p-6 border-t flex justify-end gap-3">
               <button
                 onClick={() => setEditTarget(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-sm font-medium"
               >
                 Cancel
               </button>

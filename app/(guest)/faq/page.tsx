@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { ChevronDown, Search, MessageCircle } from 'lucide-react';
@@ -147,7 +147,7 @@ export default function FAQPage() {
   })).filter(category => category.faqs.length > 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-20 px-4">
         <div className="container mx-auto text-center">
@@ -160,15 +160,15 @@ export default function FAQPage() {
 
       {/* Search Bar */}
       <section className="container mx-auto px-4 -mt-8 relative z-10">
-        <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
+        <div className="glass-card hover-lift rounded-2xl p-6 max-w-2xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <input
               type="text"
               placeholder="Search your questions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function FAQPage() {
       <section className="container mx-auto px-4 py-16">
         {filteredCategories.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">No questions found matching your search.</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">No questions found matching your search.</p>
             <Button variant="outline" onClick={() => setSearchTerm('')}>
               Clear Search
             </Button>
@@ -198,13 +198,13 @@ export default function FAQPage() {
                     return (
                       <div
                         key={faqIndex}
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+                        className="glass-card hover-lift rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
                       >
                         <button
                           onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
-                          className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
+                          className="w-full px-6 py-4 flex justify-between items-center hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors"
                         >
-                          <span className="text-left font-medium text-gray-900">
+                          <span className="text-left font-medium text-gray-900 dark:text-gray-100">
                             {faq.question}
                           </span>
                           <ChevronDown
@@ -216,7 +216,7 @@ export default function FAQPage() {
                         </button>
 
                         {isOpen && (
-                          <div className="px-6 pb-4 text-gray-700 leading-relaxed">
+                          <div className="px-6 pb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
                             {faq.answer}
                           </div>
                         )}
@@ -235,7 +235,7 @@ export default function FAQPage() {
         <div className="container mx-auto text-center max-w-2xl">
           <MessageCircle className="mx-auto mb-4 text-primary" size={48} />
           <h2 className="text-3xl font-heading font-bold mb-4">Still Have Questions?</h2>
-          <p className="text-gray-700 mb-8">
+          <p className="text-gray-700 dark:text-gray-300 mb-8">
             Can't find what you're looking for? Our team is here to help you 24/7
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

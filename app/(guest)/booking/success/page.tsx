@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -12,29 +12,29 @@ function SuccessContent() {
   const ref = searchParams.get('ref') || '—';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 flex items-center justify-center px-4 py-16">
+      <div className="glass-strong rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle className="text-green-500" size={44} />
         </div>
 
         <h1 className="text-3xl font-heading font-bold mb-3">Payment Successful!</h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
           Thank you for your booking. Your payment has been received and your reservation is confirmed.
         </p>
 
         <div className="bg-primary-light rounded-xl p-5 mb-8 text-left space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Booking Reference</span>
+            <span className="text-gray-500 dark:text-gray-400">Booking Reference</span>
             <span className="font-semibold text-primary">{ref}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Status</span>
+            <span className="text-gray-500 dark:text-gray-400">Status</span>
             <span className="font-semibold text-green-600">Confirmed</span>
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
           A confirmation email will be sent to you shortly. Please keep your booking reference handy.
         </p>
 
@@ -50,12 +50,12 @@ function SuccessContent() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100">
-          <p className="text-sm text-gray-500 mb-3">Enjoyed your stay? Share your experience!</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Enjoyed your stay? Share your experience!</p>
           <a
             href={GOOGLE_REVIEW_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 transition-colors hover:border-gray-400 transition-colors shadow-sm"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

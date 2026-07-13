@@ -42,17 +42,17 @@ function MiniCalendar({
         <button
           type="button"
           onClick={() => setView(new Date(y, m - 1))}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-semibold text-gray-900">
+        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {MONTH_NAMES[m]} {y}
         </span>
         <button
           type="button"
           onClick={() => setView(new Date(y, m + 1))}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           <ChevronRight size={16} />
         </button>
@@ -60,7 +60,7 @@ function MiniCalendar({
 
       <div className="grid grid-cols-7 mb-1">
         {DAY_LABELS.map(d => (
-          <div key={d} className="h-7 flex items-center justify-center text-xs font-medium text-gray-400">
+          <div key={d} className="h-7 flex items-center justify-center text-xs font-medium text-gray-400 dark:text-gray-500">
             {d}
           </div>
         ))}
@@ -78,7 +78,7 @@ function MiniCalendar({
                 'h-8 w-full flex items-center justify-center rounded-lg text-xs transition-colors',
                 isDisabled(d)
                   ? 'text-gray-300 cursor-not-allowed'
-                  : 'cursor-pointer hover:bg-primary-light text-gray-700',
+                  : 'cursor-pointer hover:bg-primary-light text-gray-700 dark:text-gray-300',
                 isSelected(d) ? '!bg-primary !text-white font-semibold' : '',
               ].join(' ')}
             >
@@ -132,15 +132,15 @@ export function DatePickerField({
   return (
     <div ref={ref} className={`relative ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
       )}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg bg-white hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary transition-colors text-left"
       >
         <CalendarDays size={16} className="text-primary flex-shrink-0" />
-        <span className={value ? 'text-gray-900 font-medium text-sm' : 'text-gray-400 text-sm'}>
+        <span className={value ? 'text-gray-900 dark:text-gray-100 font-medium text-sm' : 'text-gray-400 dark:text-gray-500 text-sm'}>
           {fmt(value) ?? placeholder}
         </span>
       </button>

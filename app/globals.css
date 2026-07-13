@@ -100,13 +100,19 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgb(32 143 106 / 0.85);
   }
+  .dark ::-webkit-scrollbar-track {
+    background: #111827;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    border-color: #111827;
+  }
 
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-800;
   }
 
   body {
-    @apply bg-white text-gray-900 font-sans;
+    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100 font-sans transition-colors duration-300;
   }
 
   h1,
@@ -213,4 +219,50 @@
 .whatsapp-entrance {
   animation: slideUpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.8s;
+}
+
+/* ── Glassmorphism + micro-interaction system (site-wide) ─ */
+@layer utilities {
+  /* Frosted glass panel — the default "card" look */
+  .glass-card {
+    @apply bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-lg shadow-black/[0.04] dark:shadow-black/20;
+  }
+  /* Stronger frost for headers, sidebars, modals sitting over busy content */
+  .glass-strong {
+    @apply bg-white/85 dark:bg-gray-900/80 backdrop-blur-2xl border border-white/70 dark:border-white/10 shadow-xl shadow-black/[0.06] dark:shadow-black/30;
+  }
+  /* Dark-on-glass, for panels over photos/gradients */
+  .glass-dark {
+    @apply bg-black/30 backdrop-blur-xl border border-white/10;
+  }
+  .hover-lift {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl;
+  }
+  .glow-primary {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+  .glow-primary:hover {
+    box-shadow: 0 10px 32px -8px rgb(32 143 106 / 0.4);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(24px, -28px) scale(1.06); }
+}
+.animate-float {
+  animation: float 14s ease-in-out infinite;
+}
+.animate-float-slow {
+  animation: float 20s ease-in-out infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-slow {
+    animation: none;
+  }
+  .hover-lift {
+    transition: none;
+  }
 }

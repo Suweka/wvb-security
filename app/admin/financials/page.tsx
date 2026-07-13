@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Download, TrendingUp, DollarSign, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function FinancialsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <AlertCircle className="text-red-500" size={40} />
-        <p className="text-gray-600">Failed to load financial data.</p>
+        <p className="text-gray-600 dark:text-gray-400">Failed to load financial data.</p>
         <button onClick={fetchData} className="px-4 py-2 bg-primary text-white rounded-lg">Retry</button>
       </div>
     );
@@ -84,15 +84,15 @@ export default function FinancialsPage() {
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 min-h-screen animate-fadeIn">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold mb-2">Financials</h1>
-          <p className="text-gray-600">Track revenue and financial performance</p>
+          <p className="text-gray-600 dark:text-gray-400">Track revenue and financial performance</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchData} className="text-sm flex items-center gap-1 text-gray-500 hover:text-primary">
+          <button onClick={fetchData} className="text-sm flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary">
             <RefreshCw size={14} /> Refresh
           </button>
           <button
@@ -108,7 +108,7 @@ export default function FinancialsPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {financialStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-md p-6">
+          <div key={index} className="glass-card hover-lift rounded-2xl p-6">
             <div className="flex items-start justify-between mb-4">
               <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
                 <stat.icon size={24} />
@@ -118,17 +118,17 @@ export default function FinancialsPage() {
                 Live
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{stat.title}</p>
             <p className="text-2xl font-bold">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Monthly Revenue Chart */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="glass-card hover-lift rounded-2xl p-6 mb-8">
         <h3 className="text-lg font-semibold mb-6">Monthly Revenue (Last 6 Months)</h3>
         {data.monthlyRevenue.every(d => d.revenue === 0) ? (
-          <div className="h-64 flex items-center justify-center text-gray-400">
+          <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
             <p>No revenue data yet. Revenue will appear here after paid bookings.</p>
           </div>
         ) : (
@@ -144,14 +144,14 @@ export default function FinancialsPage() {
                     style={{ height: `${(d.revenue / maxRevenue) * 180}px`, minHeight: d.revenue > 0 ? '4px' : '0' }}
                     title={`LKR ${d.revenue.toLocaleString()}`}
                   />
-                  <span className="text-xs text-gray-500 mt-2">{d.month}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mt-2">{d.month}</span>
                 </div>
               ))}
             </div>
             <div className="flex gap-4 mt-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-primary rounded" />
-                <span className="text-sm text-gray-600">Revenue (LKR)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Revenue (LKR)</span>
               </div>
             </div>
           </>
@@ -159,17 +159,17 @@ export default function FinancialsPage() {
       </div>
 
       {/* Note */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="glass-card hover-lift rounded-2xl p-6">
         <h3 className="text-lg font-semibold mb-4">Revenue Source</h3>
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Room Bookings</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Room Bookings</span>
             <span className="text-sm font-semibold">LKR {Number(data.totalRevenue).toLocaleString()}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div className="bg-primary h-3 rounded-full" style={{ width: '100%' }} />
           </div>
-          <p className="text-xs text-gray-500 mt-1">100% of total revenue from direct room bookings</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">100% of total revenue from direct room bookings</p>
         </div>
       </div>
     </div>

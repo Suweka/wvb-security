@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -125,17 +125,17 @@ function UploadReceiptContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 flex items-center justify-center px-4 py-16">
+        <div className="glass-strong rounded-2xl shadow-lg p-10 max-w-lg w-full text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="text-green-500" size={44} />
           </div>
           <h1 className="text-2xl font-heading font-bold mb-3">Receipt Submitted!</h1>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             Thank you. We have received your payment details for booking{' '}
             <span className="font-semibold text-primary">{bookingRef}</span>.
           </p>
-          <p className="text-gray-500 text-sm mb-8">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
             Our team will verify your transfer and confirm your booking within <strong>2–4 hours</strong> during business hours.
             You will receive a confirmation email once approved.
           </p>
@@ -150,9 +150,9 @@ function UploadReceiptContent() {
   const isBusy = uploading || submitting;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 py-16 px-4">
       <div className="container mx-auto max-w-xl">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="glass-strong rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center">
@@ -160,7 +160,7 @@ function UploadReceiptContent() {
             </div>
             <div>
               <h1 className="text-2xl font-heading font-bold">Submit Payment Receipt</h1>
-              <p className="text-sm text-gray-500">White Vintage Bungalow — Bank Transfer Confirmation</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">White Vintage Bungalow — Bank Transfer Confirmation</p>
             </div>
           </div>
 
@@ -172,7 +172,7 @@ function UploadReceiptContent() {
 
             {/* Booking reference */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Booking Reference <span className="text-red-500">*</span>
               </label>
               <input
@@ -180,15 +180,15 @@ function UploadReceiptContent() {
                 value={bookingRef}
                 onChange={e => setBookingRef(e.target.value.toUpperCase())}
                 placeholder="WVB-2026-XXXXXX"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase tracking-wider"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase tracking-wider"
                 required
               />
-              <p className="text-xs text-gray-400 mt-1">Found in your booking confirmation email.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Found in your booking confirmation email.</p>
             </div>
 
             {/* Transaction reference */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Bank Transaction / Reference No. <span className="text-red-500">*</span>
               </label>
               <input
@@ -196,14 +196,14 @@ function UploadReceiptContent() {
                 value={transactionRef}
                 onChange={e => setTransactionRef(e.target.value)}
                 placeholder="e.g. TRX2026061100234"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
             </div>
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Date of Transfer <span className="text-red-500">*</span>
               </label>
               <input
@@ -211,18 +211,18 @@ function UploadReceiptContent() {
                 value={transferDate}
                 onChange={e => setTransferDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                 required
               />
             </div>
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Amount Transferred (LKR) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">LKR</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">LKR</span>
                 <input
                   type="number"
                   value={amountPaid}
@@ -230,7 +230,7 @@ function UploadReceiptContent() {
                   placeholder="0.00"
                   min="1"
                   step="0.01"
-                  className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-12 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -238,17 +238,17 @@ function UploadReceiptContent() {
 
             {/* Receipt Image Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Receipt Image <span className="text-gray-400 font-normal">(optional but recommended)</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Receipt Image <span className="text-gray-400 dark:text-gray-500 font-normal">(optional but recommended)</span>
               </label>
 
               {receiptPreview ? (
                 /* Preview */
-                <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                   <img
                     src={receiptPreview}
                     alt="Receipt preview"
-                    className="w-full max-h-64 object-contain bg-gray-50"
+                    className="w-full max-h-64 object-contain bg-gray-50 dark:bg-gray-900"
                   />
                   <button
                     type="button"
@@ -267,11 +267,11 @@ function UploadReceiptContent() {
                   onDrop={handleDrop}
                   onDragOver={e => e.preventDefault()}
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-primary-light/30 transition-colors"
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-primary-light/30 transition-colors"
                 >
-                  <ImageIcon className="mx-auto text-gray-400 mb-3" size={36} />
-                  <p className="text-sm font-medium text-gray-700">Click to upload or drag & drop</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — max 8 MB</p>
+                  <ImageIcon className="mx-auto text-gray-400 dark:text-gray-500 mb-3" size={36} />
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Click to upload or drag & drop</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">JPG, PNG, WEBP — max 8 MB</p>
                 </div>
               )}
 
@@ -286,15 +286,15 @@ function UploadReceiptContent() {
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes <span className="text-gray-400 font-normal">(optional)</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Additional Notes <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
               </label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Any additional information about the transfer..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
 

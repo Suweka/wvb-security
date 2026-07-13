@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { RoomCard } from '@/components/guest/RoomCard';
@@ -100,7 +100,7 @@ export default function RoomsPage() {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-20 px-4">
         <div className="container mx-auto text-center">
@@ -117,13 +117,13 @@ export default function RoomsPage() {
           <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Search */}
             <div className="flex-1 relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
               <input
                 type="text"
                 placeholder="Search rooms..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -132,7 +132,7 @@ export default function RoomsPage() {
               <select
                 value={filterGuests}
                 onChange={(e) => setFilterGuests(e.target.value)}
-                className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="flex-1 md:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Guests</option>
                 <option value="1">1 Guest</option>
@@ -144,7 +144,7 @@ export default function RoomsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="flex-1 md:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="recommended">Recommended</option>
                 <option value="price-low">Price: Low to High</option>
@@ -174,9 +174,9 @@ export default function RoomsPage() {
 
           {filteredRooms.length === 0 ? (
             <div className="text-center py-20">
-              <Bed className="mx-auto text-gray-400 mb-4" size={64} />
-              <h3 className="text-2xl font-semibold text-gray-700 mb-2">No rooms found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search terms</p>
+              <Bed className="mx-auto text-gray-400 dark:text-gray-500 mb-4" size={64} />
+              <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No rooms found</h3>
+              <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters or search terms</p>
               <Button
                 variant="primary"
                 size="lg"
@@ -204,7 +204,7 @@ export default function RoomsPage() {
       <section className="bg-primary-light py-16 px-4">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-heading font-bold mb-4">Need Help Choosing?</h2>
-          <p className="text-gray-700 mb-6 max-w-2xl mx-auto">
+          <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
             Our team is here to help you find the perfect room for your stay
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

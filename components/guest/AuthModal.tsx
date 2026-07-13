@@ -179,7 +179,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           {/* Close button */}
           <Dialog.Close
             onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+            className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 transition"
           >
             <X size={22} />
           </Dialog.Close>
@@ -188,7 +188,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           {view !== 'menu' && (
             <button
               onClick={() => { setView('menu'); setError(''); }}
-              className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition flex items-center gap-1 text-sm"
+              className="absolute top-4 left-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 transition flex items-center gap-1 text-sm"
             >
               <ChevronLeft size={18} /> Back
             </button>
@@ -198,15 +198,15 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           {view === 'menu' && (
             <div>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Welcome</h2>
-                <p className="text-gray-500 text-sm mt-1">Sign in or create an account</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Sign in or create an account</p>
               </div>
 
               <div className="space-y-3">
                 {/* Google */}
                 <button
                   onClick={handleGoogle}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition font-medium"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition font-medium"
                 >
                   <GoogleIcon />
                   Continue with Google
@@ -215,7 +215,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 {/* Phone OTP */}
                 <button
                   onClick={() => { setView('phone'); setError(''); }}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition font-medium"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition font-medium"
                 >
                   <Phone size={20} className="text-primary" />
                   Continue with Phone
@@ -223,10 +223,10 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
 
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200" />
+                    <div className="w-full border-t border-gray-200 dark:border-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-3 bg-white text-gray-400">or use email</span>
+                    <span className="px-3 bg-white text-gray-400 dark:text-gray-500">or use email</span>
                   </div>
                 </div>
 
@@ -250,7 +250,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
               </div>
 
               {/* Guest checkout note */}
-              <p className="text-center text-xs text-gray-400 mt-6">
+              <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
                 You can also{' '}
                 <button onClick={handleClose} className="text-primary hover:underline font-medium">
                   continue as guest
@@ -265,7 +265,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
             <div>
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold">Sign In</h2>
-                <p className="text-gray-500 text-sm mt-1">Welcome back!</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Welcome back!</p>
               </div>
 
               {error && (
@@ -276,39 +276,39 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type="email"
                       value={loginForm.email}
                       onChange={e => setLoginForm({ ...loginForm, email: e.target.value })}
                       placeholder="john@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between mb-1">
-                    <label className="text-sm font-medium text-gray-700">Password</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                     <button type="button" className="text-xs text-primary hover:underline">
                       Forgot password?
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={loginForm.password}
                       onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
                       placeholder="Your password"
-                      className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -324,7 +324,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 </button>
               </form>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
                 Don't have an account?{' '}
                 <button onClick={() => setView('register')} className="text-primary font-medium hover:underline">
                   Create one
@@ -338,7 +338,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
             <div>
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold">Create Account</h2>
-                <p className="text-gray-500 text-sm mt-1">Join and earn loyalty rewards</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Join and earn loyalty rewards</p>
               </div>
 
               {error && (
@@ -349,62 +349,62 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
 
               <form onSubmit={handleRegister} className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type="text"
                       value={registerForm.name}
                       onChange={e => setRegisterForm({ ...registerForm, name: e.target.value })}
                       placeholder="John Doe"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type="email"
                       value={registerForm.email}
                       onChange={e => setRegisterForm({ ...registerForm, email: e.target.value })}
                       placeholder="john@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone (Optional)</label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type="tel"
                       value={registerForm.phone}
                       onChange={e => setRegisterForm({ ...registerForm, phone: e.target.value })}
                       placeholder="+94 77 123 4567"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={registerForm.password}
                       onChange={e => setRegisterForm({ ...registerForm, password: e.target.value })}
                       placeholder="Min. 8 characters"
-                      className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -412,15 +412,15 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                     <input
                       type="password"
                       value={registerForm.confirmPassword}
                       onChange={e => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
                       placeholder="Repeat password"
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 </button>
               </form>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
                 Already have an account?{' '}
                 <button onClick={() => setView('login')} className="text-primary font-medium hover:underline">
                   Sign in
@@ -451,7 +451,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                   <Phone className="text-primary" size={28} />
                 </div>
                 <h2 className="text-2xl font-bold">Phone Verification</h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                   {otpSent
                     ? `Enter the 6-digit code sent to ${phone}`
                     : 'Enter your phone number to receive a code'}
@@ -468,15 +468,15 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 // Step 1: Enter Phone
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                       <input
                         type="tel"
                         value={phone}
                         onChange={e => { setPhone(e.target.value); setError('') }}
                         placeholder="+94 77 123 4567"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                       />
                     </div>
                   </div>
@@ -493,7 +493,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                 <div className="space-y-4">
                   {/* 6 separate OTP boxes */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
                       Verification Code
                     </label>
                     <div className="flex gap-2 justify-center">
@@ -520,7 +520,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                             }
                           }}
                           id={`otp-${i}`}
-                          className="w-11 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          className="w-11 h-12 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                       ))}
                     </div>
@@ -535,10 +535,10 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                   </button>
 
                   {/* Resend */}
-                  <p className="text-center text-sm text-gray-500">
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                     Didn't receive the code?{' '}
                     {otpTimer > 0 ? (
-                      <span className="text-gray-400">Resend in {otpTimer}s</span>
+                      <span className="text-gray-400 dark:text-gray-500">Resend in {otpTimer}s</span>
                     ) : (
                       <button
                         onClick={handleSendOtp}
@@ -549,7 +549,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                     )}
                   </p>
 
-                  <p className="text-center text-xs text-gray-400">
+                  <p className="text-center text-xs text-gray-400 dark:text-gray-500">
                     Wrong number?{' '}
                     <button
                       onClick={() => { setOtpSent(false); setOtp(''); setPhone(''); }}

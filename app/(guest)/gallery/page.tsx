@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -79,7 +79,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-20 px-4">
         <div className="container mx-auto text-center">
@@ -101,7 +101,7 @@ export default function GalleryPage() {
                 className={`px-6 py-2 rounded-full font-medium whitespace-nowrap transition-all ${
                   activeCategory === cat.id
                     ? 'bg-primary text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                 }`}
               >
                 {cat.label}
@@ -141,7 +141,7 @@ export default function GalleryPage() {
 
         {filteredImages.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">No images found in this category</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No images found in this category</p>
           </div>
         )}
       </section>
@@ -153,7 +153,7 @@ export default function GalleryPage() {
           <p className="text-gray-200 mb-6 max-w-2xl mx-auto">
             Book your stay and discover the charm of our vintage bungalow
           </p>
-          <button className="bg-accent text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-accent-light transition-colors">
+          <button className="bg-accent text-gray-900 dark:text-gray-100 px-8 py-3 rounded-lg font-semibold hover:bg-accent-light transition-colors">
             Book Your Stay
           </button>
         </div>

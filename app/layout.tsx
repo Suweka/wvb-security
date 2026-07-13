@@ -29,8 +29,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Set theme class before paint to avoid a light/dark flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className="antialiased" suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

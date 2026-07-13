@@ -8,7 +8,7 @@ export default function WhatsAppButton() {
     <div className="whatsapp-entrance fixed bottom-6 right-6 z-50 flex items-center gap-3 group opacity-0">
       {/* "Chat with us" label — fades + slides in on hover */}
       <div className="pointer-events-none opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out">
-        <div className="bg-white text-gray-800 text-sm font-semibold px-4 py-2 rounded-full shadow-lg border border-gray-100 whitespace-nowrap flex items-center gap-2">
+        <div className="bg-white text-gray-800 dark:text-gray-200 text-sm font-semibold px-4 py-2 rounded-full shadow-lg border border-gray-100 whitespace-nowrap flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#25D366] inline-block animate-pulse" />
           Chat with us
         </div>

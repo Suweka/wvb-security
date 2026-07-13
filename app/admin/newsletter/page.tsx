@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Users, Send, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
@@ -54,24 +54,24 @@ export default function AdminNewsletterPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Newsletter</h1>
-        <p className="text-gray-500 mt-1">Manage subscribers and send newsletters</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Newsletter</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage subscribers and send newsletters</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* Compose & Send */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="glass-card hover-lift rounded-2xl border p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center">
               <Send className="text-primary" size={20} />
             </div>
             <div>
               <h2 className="font-bold text-lg">Compose Newsletter</h2>
-              <p className="text-sm text-gray-500">Sending to <strong>{activeCount}</strong> active subscriber{activeCount !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Sending to <strong>{activeCount}</strong> active subscriber{activeCount !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
@@ -84,27 +84,27 @@ export default function AdminNewsletterPage() {
 
           <form onSubmit={handleSend} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject *</label>
               <input
                 type="text"
                 value={subject}
                 onChange={e => setSubject(e.target.value)}
                 placeholder="e.g. Special offer for June..."
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message *</label>
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
                 rows={8}
                 placeholder="Write your newsletter message here..."
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
                 required
               />
-              <p className="text-xs text-gray-400 mt-1">Each line becomes a paragraph in the email.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Each line becomes a paragraph in the email.</p>
             </div>
             <button
               type="submit"
@@ -121,7 +121,7 @@ export default function AdminNewsletterPage() {
         </div>
 
         {/* Subscribers list */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="glass-card hover-lift rounded-2xl border p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center">
@@ -129,7 +129,7 @@ export default function AdminNewsletterPage() {
               </div>
               <div>
                 <h2 className="font-bold text-lg">Subscribers</h2>
-                <p className="text-sm text-gray-500">{activeCount} active · {subscribers.length - activeCount} unsubscribed</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{activeCount} active Â· {subscribers.length - activeCount} unsubscribed</p>
               </div>
             </div>
           </div>
@@ -141,17 +141,17 @@ export default function AdminNewsletterPage() {
           ) : subscribers.length === 0 ? (
             <div className="text-center py-12">
               <Mail className="mx-auto text-gray-300 mb-3" size={40} />
-              <p className="text-gray-500">No subscribers yet</p>
+              <p className="text-gray-500 dark:text-gray-400">No subscribers yet</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
               {subscribers.map(sub => (
-                <div key={sub.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+                <div key={sub.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className="text-sm text-gray-800 truncate">{sub.email}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{sub.email}</span>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
                     {new Date(sub.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
