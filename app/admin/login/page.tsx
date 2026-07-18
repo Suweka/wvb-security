@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Reveal } from '@/components/guest/Reveal';
 import { Magnetic } from '@/components/ui/Magnetic';
+import { setAdminUser } from '@/lib/auth';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -34,9 +35,9 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Store token in localStorage
-      localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('adminUser', JSON.stringify(data.user));
+      // The real session token is already set as an httpOnly cookie by the API route.
+      // We only cache the (non-sensitive) profile info here for the admin UI to display.
+      setAdminUser(data.user);
 
       // Redirect to dashboard
       router.push('/admin/dashboard');

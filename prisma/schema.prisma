@@ -211,14 +211,38 @@ enum ReceiptStatus {
 
 model Room {
   id          String    @id @default(uuid())
+  slug        String?   @unique // generated once at creation from name, immutable; nullable at DB level to keep migration simple
   name        String
   description String?
   price       Decimal   @db.Decimal(10, 2)
-  
+  maxGuests   Int       @default(2)
+  size        Int       @default(300) // sqft
+  beds        String?   // e.g. "1 King Bed"
+
   // Relations
+  images      RoomImage[]
+  facilities  Facility[]
   bookings    Booking[]
   reviews     Review[]
   tasks       Task[]
+}
+
+model RoomImage {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  url       String
+  publicId  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Facility {
+  id       String  @id @default(cuid())
+  label    String  @unique
+  icon     String  @default("Check") // lucide-react icon name, resolved via lib/facility-icons.ts
+  category String  @default("general") // room | bathroom | technology | food | general
+  rooms    Room[]
 }
 
 model Review {
@@ -344,4 +368,28 @@ model ConciergeRequest {
   completedAt DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actor      String   // admin email (or attempted email, for failed logins)
+  action     String   // e.g. LOGIN_SUCCESS, LOGIN_FAILED, ROOM_CREATE, RECEIPT_APPROVE
+  entityType String?  // e.g. "Room", "Booking", "BankTransferReceipt"
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actor])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Admin accounts are currently a hardcoded list (see app/api/auth/login),
+// not a DB table — this holds the one profile field (avatar) that needs
+// to persist per admin email until that's backed by a real Admin model.
+model AdminProfile {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  avatarUrl String?
+  updatedAt DateTime @updatedAt
 }

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendBookingConfirmedEmail } from '@/lib/email';
+import { requireAdmin } from '@/lib/admin-auth';
+import { logAudit } from '@/lib/audit-log';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const admin = requireAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { action } = await request.json(); // 'approve' | 'reject'
 
@@ -30,7 +36,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // Update receipt status
     await prisma.bankTransferReceipt.update({
       where: { id: params.id },
-      data:  { status: newReceiptStatus, reviewedAt: new Date() },
+      data:  { status: newReceiptStatus, reviewedAt: new Date(), reviewedBy: admin.email },
+    });
+
+    await logAudit({
+      actor: admin.email,
+      action: action === 'approve' ? 'RECEIPT_APPROVE' : 'RECEIPT_REJECT',
+      entityType: 'BankTransferReceipt',
+      entityId: params.id,
+      metadata: { bookingNumber: receipt.booking.bookingNumber },
     });
 
     // Update all bookings for this reservation (primary + multi-room siblings)

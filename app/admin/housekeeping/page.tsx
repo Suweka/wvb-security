@@ -2,9 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Check, User, Calendar, Loader2, AlertCircle, RefreshCw, Edit, X } from 'lucide-react';
-import { getHousekeepingData } from '@/lib/admin-actions';
+import { getHousekeepingData, getRoomsData } from '@/lib/admin-actions';
 
 type TaskStatus = 'pending' | 'in-progress' | 'completed';
+
+interface RoomOption {
+  id: string;
+  name: string;
+}
 
 interface HousekeepingTask {
   id: string;
@@ -22,6 +27,7 @@ interface NewTaskForm {
   description: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   dueAt: string;
+  roomId: string;
 }
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
@@ -38,6 +44,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function HousekeepingPage() {
   const [tasks, setTasks]             = useState<HousekeepingTask[]>([]);
+  const [rooms, setRooms]             = useState<RoomOption[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,7 +58,7 @@ export default function HousekeepingPage() {
 
   // New task modal
   const [showNew, setShowNew]         = useState(false);
-  const [newForm, setNewForm]         = useState<NewTaskForm>({ title: '', description: '', priority: 'MEDIUM', dueAt: '' });
+  const [newForm, setNewForm]         = useState<NewTaskForm>({ title: '', description: '', priority: 'MEDIUM', dueAt: '', roomId: '' });
   const [newLoading, setNewLoading]   = useState(false);
 
   const fetchTasks = useCallback(async () => {
@@ -64,6 +71,10 @@ export default function HousekeepingPage() {
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  useEffect(() => {
+    getRoomsData().then(data => { if (data) setRooms(data.map(r => ({ id: r.id, name: r.name }))); });
+  }, []);
 
   const filtered = tasks.filter(t => {
     const q = searchQuery.toLowerCase();
@@ -130,11 +141,12 @@ export default function HousekeepingPage() {
           description: newForm.description || null,
           priority:    newForm.priority,
           dueAt:       newForm.dueAt || null,
+          roomId:      newForm.roomId || null,
         }),
       });
       if (!res.ok) throw new Error();
       setShowNew(false);
-      setNewForm({ title: '', description: '', priority: 'MEDIUM', dueAt: '' });
+      setNewForm({ title: '', description: '', priority: 'MEDIUM', dueAt: '', roomId: '' });
       setActionMsg('Task created.');
       await fetchTasks();
     } catch {
@@ -377,6 +389,21 @@ export default function HousekeepingPage() {
                   onChange={e => setNewForm({ ...newForm, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room</label>
+                <div className="select-wrapper">
+                  <select
+                    value={newForm.roomId}
+                    onChange={e => setNewForm({ ...newForm, roomId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                  >
+                    <option value="">General (no specific room)</option>
+                    {rooms.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>

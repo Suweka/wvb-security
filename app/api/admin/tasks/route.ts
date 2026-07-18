@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function POST(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { title, description, priority, roomId, dueAt } = await req.json();
 

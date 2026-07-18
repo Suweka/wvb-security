@@ -1,9 +1,13 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  if (!requireAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const bookings = await prisma.booking.findMany({
       where: { status: 'CONFIRMED' },

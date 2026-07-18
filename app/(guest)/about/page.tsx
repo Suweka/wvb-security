@@ -1,16 +1,20 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { Award, Users, Heart, Shield, Star, CheckCircle } from 'lucide-react';
+import { Reveal, Stagger } from '@/components/guest/Reveal';
+import { CountUp } from '@/components/guest/CountUp';
+import { Award, Users, Heart, Shield, Star, CheckCircle, Sparkles } from 'lucide-react';
 
 export default function AboutPage() {
   const stats = [
-    { number: '10+', label: 'Years of Hospitality' },
-    { number: '500+', label: 'Happy Guests' },
-    { number: '4', label: 'Rooms & Suites' },
-    { number: '4.9', label: 'Google Rating' },
+    { end: 10,  suffix: '+', decimals: 0, label: 'Years of Hospitality' },
+    { end: 500, suffix: '+', decimals: 0, label: 'Happy Guests' },
+    { end: 4,   suffix: '',  decimals: 0, label: 'Rooms & Suites' },
+    { end: 4.9, suffix: '',  decimals: 1, label: 'Google Rating' },
   ];
 
   const values = [
@@ -43,35 +47,67 @@ export default function AboutPage() {
     { name: 'Suweka Jayakody', position: 'IT Manager', image: '/images/team/4.jpeg' },
   ];
 
+  const highlights = [
+    { title: 'Home-Style Dining', org: 'Fresh meals prepared by our in-house chef' },
+    { title: 'Garden & Barbeque Evenings', org: 'Private garden with an outdoor BBQ grill' },
+    { title: 'Tea-Country Views', org: 'Misty mountains and plantations at every turn' },
+  ];
+
+  const reasons = [
+    'Charming vintage-style bungalow',
+    'Prime location in Nuwara Eliya',
+    'Personalized, family-run service',
+    'Modern comforts in every room',
+    'Stunning mountain views',
+    '4.9★ rated by guests on Google',
+  ];
+
   return (
-    <div className="min-h-screen bg-white animate-fadeIn">
+    <div className="min-h-screen bg-white dark:bg-gray-950 animate-fadeIn">
       {/* Hero Section */}
-      <section className="relative h-[500px] bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white overflow-hidden">
+      <section className="relative isolate h-[560px] bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white overflow-hidden">
         <Image
           src="/images/hero-bg.jpg"
           alt="White Vintage Bungalow"
           fill
-          className="object-cover opacity-40"
+          priority
+          className="object-cover opacity-40 animate-kenburns"
         />
+        <div className="absolute top-10 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-accent/20 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+
         <div className="relative z-10 text-center max-w-4xl px-4">
-          <h1 className="text-5xl md:text-6xl font-heading font-bold mb-4">About Us</h1>
-          <p className="text-xl text-gray-200">
-            Vintage Charm &amp; Warm Hospitality in Sri Lanka&apos;s Hill Country
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          >
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+              <Sparkles size={14} className="text-accent" />
+              Nuwara Eliya, Sri Lanka
+            </div>
+            <h1 className="text-5xl md:text-6xl font-heading font-bold mb-4">About Us</h1>
+            <p className="text-xl text-gray-200">
+              Vintage Charm &amp; Warm Hospitality in Sri Lanka&apos;s Hill Country
+            </p>
+          </motion.div>
         </div>
       </section>
 
       {/* Stats */}
-      <section className="bg-primary text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">{stat.number}</div>
+      <section className="relative isolate overflow-hidden bg-gradient-to-r from-primary to-primary-dark text-white py-14">
+        <div className="absolute -top-20 left-1/4 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-float pointer-events-none" />
+        <div className="container mx-auto px-4 relative">
+          <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-4xl md:text-5xl font-bold mb-2">
+                  <CountUp end={stat.end} suffix={stat.suffix} decimals={stat.decimals} />
+                </div>
                 <div className="text-gray-200">{stat.label}</div>
               </div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -79,8 +115,8 @@ export default function AboutPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="text-primary font-medium mb-2">OUR STORY</div>
+            <Reveal direction="right">
+              <div className="text-primary font-medium mb-2 tracking-wide">OUR STORY</div>
               <h2 className="text-4xl font-heading font-bold mb-6">
                 A Home Away From Home in the Hills
               </h2>
@@ -101,26 +137,34 @@ export default function AboutPage() {
                 cool hill-country air, our team makes sure your stay feels effortless
                 from check-in to farewell.
               </p>
-              <Button variant="primary" size="lg">
-                Discover Our Rooms
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Image
-                src="/images/about/about1.jpeg"
-                alt="White Vintage Bungalow Interior"
-                width={400}
-                height={300}
-                className="rounded-lg object-cover h-64 w-full"
-              />
-              <Image
-                src="/images/about/about2.jpeg"
-                alt="White Vintage Bungalow Exterior"
-                width={400}
-                height={300}
-                className="rounded-lg object-cover h-64 w-full mt-8"
-              />
-            </div>
+              <Link href="/rooms">
+                <Button variant="primary" size="lg">
+                  Discover Our Rooms
+                </Button>
+              </Link>
+            </Reveal>
+            <Reveal direction="left" delay={0.15}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg overflow-hidden shadow-lg hover-lift">
+                  <Image
+                    src="/images/about/about1.jpeg"
+                    alt="White Vintage Bungalow Interior"
+                    width={400}
+                    height={300}
+                    className="object-cover h-64 w-full"
+                  />
+                </div>
+                <div className="rounded-lg overflow-hidden shadow-lg hover-lift mt-8">
+                  <Image
+                    src="/images/about/about2.jpeg"
+                    alt="White Vintage Bungalow Exterior"
+                    width={400}
+                    height={300}
+                    className="object-cover h-64 w-full"
+                  />
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -128,130 +172,121 @@ export default function AboutPage() {
       {/* Our Values */}
       <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <div className="text-primary font-medium mb-2">OUR VALUES</div>
+          <Reveal className="text-center mb-12">
+            <div className="text-primary font-medium mb-2 tracking-wide">OUR VALUES</div>
             <h2 className="text-4xl font-heading font-bold">What We Stand For</h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-md text-center">
-                <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-4">
+          <Stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {values.map((value) => (
+              <div
+                key={value.title}
+                className="glass-card glow-primary hover-lift rounded-2xl p-8 text-center group"
+              >
+                <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
                   <value.icon className="text-primary" size={32} />
                 </div>
                 <h3 className="text-xl font-heading font-semibold mb-3">{value.title}</h3>
                 <p className="text-gray-600 dark:text-gray-400">{value.description}</p>
               </div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* Team Section */}
       <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <div className="text-primary font-medium mb-2">OUR TEAM</div>
+          <Reveal className="text-center mb-12">
+            <div className="text-primary font-medium mb-2 tracking-wide">OUR TEAM</div>
             <h2 className="text-4xl font-heading font-bold">Meet the People Behind Our Service</h2>
             <p className="text-gray-600 dark:text-gray-400 mt-4 max-w-2xl mx-auto">
               Our dedicated team is committed to making your stay memorable
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="glass-card hover-lift rounded-2xl overflow-hidden">
-                <Image
-                  src={member.image}
-                  alt={member.name}
-                  width={300}
-                  height={256}
-                  className="w-full h-64 object-cover"
-                />
+          <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {team.map((member) => (
+              <div key={member.name} className="glass-card glow-primary hover-lift rounded-2xl overflow-hidden group">
+                <div className="overflow-hidden">
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    width={300}
+                    height={256}
+                    className="w-full h-64 object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+                </div>
                 <div className="p-6 text-center">
                   <h3 className="text-xl font-heading font-semibold mb-1">{member.name}</h3>
                   <p className="text-gray-600 dark:text-gray-400">{member.position}</p>
                 </div>
               </div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* Guest Favourites */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <div className="text-primary font-medium mb-2">GUEST FAVOURITES</div>
+          <Reveal className="text-center mb-12">
+            <div className="text-primary font-medium mb-2 tracking-wide">GUEST FAVOURITES</div>
             <h2 className="text-4xl font-heading font-bold">What Guests Love Most</h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                title: 'Home-Style Dining',
-                org: 'Fresh meals prepared by our in-house chef',
-              },
-              {
-                title: 'Garden & Barbeque Evenings',
-                org: 'Private garden with an outdoor BBQ grill',
-              },
-              {
-                title: 'Tea-Country Views',
-                org: 'Misty mountains and plantations at every turn',
-              },
-            ].map((highlight, index) => (
-              <div key={index} className="text-center p-6 bg-primary-light rounded-lg">
-                <Award className="text-primary mx-auto mb-4" size={48} />
+          <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {highlights.map((highlight) => (
+              <div key={highlight.title} className="glass-card glow-primary hover-lift rounded-2xl text-center p-8 group">
+                <Award className="text-primary mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" size={48} />
                 <h3 className="text-lg font-semibold mb-2">{highlight.title}</h3>
                 <p className="text-gray-600 dark:text-gray-400">{highlight.org}</p>
               </div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 px-4 bg-primary text-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
+      <section className="relative isolate overflow-hidden py-20 px-4 bg-gradient-to-r from-primary to-primary-dark text-white">
+        <div className="absolute -bottom-24 -right-16 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+        <div className="container mx-auto relative">
+          <Reveal className="text-center mb-12">
             <h2 className="text-4xl font-heading font-bold mb-4">Why Choose White Vintage Bungalow?</h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              'Charming vintage-style bungalow',
-              'Prime location in Nuwara Eliya',
-              'Personalized, family-run service',
-              'Modern comforts in every room',
-              'Stunning mountain views',
-              '4.9★ rated by guests on Google',
-            ].map((reason: string, index: number) => (
-              <div key={index} className="flex items-center gap-3">
+          <Stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {reasons.map((reason) => (
+              <div key={reason} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3 hover:bg-white/15 transition-colors">
                 <CheckCircle size={24} className="text-accent flex-shrink-0" />
                 <span className="text-lg">{reason}</span>
               </div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center">
+      <section className="relative isolate overflow-hidden py-20 px-4">
+        <div className="absolute -top-16 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float pointer-events-none" />
+        <Reveal className="container mx-auto text-center relative">
           <h2 className="text-3xl font-heading font-bold mb-4">Experience the White Vintage Charm</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
             Book your stay and see why our guests keep coming back
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="primary" size="lg">
-              Book Your Stay
-            </Button>
-            <Button variant="outline" size="lg">
-              Contact Us
-            </Button>
+            <Link href="/booking">
+              <Button variant="primary" size="lg" className="w-full sm:w-auto">
+                Book Your Stay
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Contact Us
+              </Button>
+            </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
     </div>
   );

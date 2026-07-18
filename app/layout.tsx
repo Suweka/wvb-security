@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 import { Providers } from "@/components/Providers";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ChatWidget from "@/components/ChatWidget";
 
 export default function RootLayout({
   children,
@@ -42,6 +43,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <ChatWidget />
         <WhatsAppButton />
       </body>
     </html>

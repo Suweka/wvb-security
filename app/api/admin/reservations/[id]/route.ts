@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
+import { logAudit } from '@/lib/audit-log';
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const admin = requireAdmin(req);
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const { action } = body;
@@ -16,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         where: { id: booking.id },
         data:  { status: 'CANCELLED' },
       });
+      await logAudit({ actor: admin.email, action: 'BOOKING_CANCEL', entityType: 'Booking', entityId: booking.id, metadata: { bookingNumber: params.id } });
       return NextResponse.json({ success: true });
     }
 
@@ -61,6 +68,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           guests:   Number(guests),
           totalAmount,
         },
+      });
+      await logAudit({
+        actor: admin.email,
+        action: 'BOOKING_EDIT',
+        entityType: 'Booking',
+        entityId: booking.id,
+        metadata: { bookingNumber: params.id, roomId, checkIn, checkOut, guests },
       });
       return NextResponse.json({ success: true });
     }

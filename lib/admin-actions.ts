@@ -114,6 +114,8 @@ export async function getRoomsData() {
         tasks: {
           where: { status: { not: 'COMPLETED' } },
         },
+        images: { orderBy: { order: 'asc' } },
+        facilities: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -127,11 +129,17 @@ export async function getRoomsData() {
 
       return {
         id: r.id,
+        slug: r.slug,
         name: r.name,
         description: r.description || '',
         price: Number(r.price),
+        maxGuests: r.maxGuests,
+        size: r.size,
+        beds: r.beds || '',
         status,
         activeTaskCount: r.tasks.length,
+        images: r.images.map(img => ({ id: img.id, url: img.url, order: img.order })),
+        facilities: r.facilities.map(f => ({ id: f.id, label: f.label, icon: f.icon, category: f.category })),
       };
     });
   } catch (error) {

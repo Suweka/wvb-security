@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-const SLUG_TO_NAME: Record<string, string> = {
-  'deluxe-room':   'Deluxe Room',
-  'junior-suite':  'Junior Suite',
-  'family-room':   'Family Room',
-  'premium-suite': 'Premium Suite',
-  'single-room':   'Single Room',
-  'garden-view':   'Garden View Room',
-};
-
 export async function POST(request: NextRequest) {
   try {
     const { roomSlugs } = await request.json();
@@ -18,10 +9,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ unavailableDates: [] });
     }
 
-    const roomNames = (roomSlugs as string[]).map(s => SLUG_TO_NAME[s] || s);
-
     const rooms = await prisma.room.findMany({
-      where: { name: { in: roomNames, mode: 'insensitive' } },
+      where: { slug: { in: roomSlugs as string[] } },
       select: { id: true },
     });
 

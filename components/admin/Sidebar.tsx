@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 import {
   LayoutDashboard,
   Calendar,
@@ -19,13 +18,11 @@ import {
   Mail,
   Menu,
   X,
+  ShieldCheck,
 } from 'lucide-react';
-import { getAdminUser, type AdminUser } from '@/lib/auth';
-
 export const AdminSidebar = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<AdminUser | null>(null);
   const [messagesUnread, setMessagesUnread] = useState(0);
 
   useEffect(() => {
@@ -33,7 +30,6 @@ export const AdminSidebar = () => {
   }, [pathname]);
 
   useEffect(() => {
-    setUser(getAdminUser());
     fetch('/api/admin/notifications')
       .then(res => res.json())
       .then(data => setMessagesUnread(data.messagesUnread || 0))
@@ -52,6 +48,7 @@ export const AdminSidebar = () => {
     { icon: Star, label: 'Reviews', href: '/admin/reviews' },
     { icon: ConciergeBell, label: 'Concierge', href: '/admin/concierge' },
     { icon: Mail, label: 'Newsletter', href: '/admin/newsletter' },
+    { icon: ShieldCheck, label: 'Audit Log', href: '/admin/audit-log' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 
@@ -94,7 +91,7 @@ export const AdminSidebar = () => {
         </div>
 
         {/* Menu Items */}
-        <nav className="p-4 overflow-y-auto" style={{ height: 'calc(100% - 180px)' }}>
+        <nav className="p-4 overflow-y-auto" style={{ height: 'calc(100% - 96px)' }}>
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
@@ -122,23 +119,6 @@ export const AdminSidebar = () => {
             })}
           </ul>
         </nav>
-
-        {/* User Profile (logout lives in the top navbar) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/50 glass-card">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/images/avatars/admin.jpg"
-              alt="Admin User"
-              width={40}
-              height={40}
-              className="rounded-full object-cover ring-2 ring-white/70"
-            />
-            <div className="flex-1">
-              <h4 className="font-semibold text-sm">{user?.name || 'Admin'}</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'Admin'}</p>
-            </div>
-          </div>
-        </div>
       </aside>
     </>
   );

@@ -1,25 +1,60 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, DollarSign, Loader2, AlertCircle, RefreshCw, Edit, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Search, Plus, DollarSign, Loader2, AlertCircle, RefreshCw, Edit, X,
+  Upload, Star, Trash2, Users, Maximize, BedDouble, Wrench, CheckCircle2,
+} from 'lucide-react';
 import { getRoomsData } from '@/lib/admin-actions';
+import { getFacilityIcon, FACILITY_ICON_NAMES, FACILITY_CATEGORIES } from '@/lib/facility-icons';
 
 type RoomStatus = 'available' | 'booked' | 'maintenance' | 'cleaning';
 
+interface RoomImageItem {
+  id: string;
+  url: string;
+  order: number;
+}
+
+interface FacilityItem {
+  id: string;
+  label: string;
+  icon: string;
+  category: string;
+}
+
 interface Room {
   id: string;
+  slug: string | null;
   name: string;
   description: string;
   price: number;
+  maxGuests: number;
+  size: number;
+  beds: string;
   status: RoomStatus;
   activeTaskCount: number;
+  images: RoomImageItem[];
+  facilities: FacilityItem[];
 }
 
-interface RoomForm {
+interface AddForm {
   name: string;
   description: string;
   price: string;
 }
+
+interface EditForm {
+  name: string;
+  description: string;
+  price: string;
+  maxGuests: string;
+  size: string;
+  beds: string;
+  facilityIds: string[];
+}
+
+const EMPTY_ADD_FORM: AddForm = { name: '', description: '', price: '' };
 
 const STATUS_COLORS: Record<RoomStatus, string> = {
   available:   'bg-green-100 text-green-700',
@@ -28,8 +63,38 @@ const STATUS_COLORS: Record<RoomStatus, string> = {
   maintenance: 'bg-red-100 text-red-700',
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  room: 'Room Features',
+  bathroom: 'Bathroom',
+  technology: 'Technology',
+  food: 'Dining & Kitchen',
+  general: 'General',
+};
+
+async function uploadRoomImageToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
+  const sigRes = await fetch('/api/upload/signature?folder=room-images');
+  if (!sigRes.ok) throw new Error('Could not get upload signature');
+  const { signature, timestamp, folder, cloudName, apiKey } = await sigRes.json();
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('signature', signature);
+  form.append('timestamp', String(timestamp));
+  form.append('api_key', apiKey);
+  form.append('folder', folder);
+
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!uploadRes.ok) throw new Error('Image upload failed');
+  const data = await uploadRes.json();
+  return { url: data.secure_url as string, publicId: data.public_id as string };
+}
+
 export default function RoomsPage() {
   const [rooms, setRooms]               = useState<Room[]>([]);
+  const [facilities, setFacilities]     = useState<FacilityItem[]>([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(false);
   const [searchQuery, setSearchQuery]   = useState('');
@@ -38,13 +103,23 @@ export default function RoomsPage() {
 
   // Edit modal
   const [editRoom, setEditRoom]         = useState<Room | null>(null);
-  const [editForm, setEditForm]         = useState<RoomForm>({ name: '', description: '', price: '' });
+  const [editForm, setEditForm]         = useState<EditForm>({
+    name: '', description: '', price: '', maxGuests: '2', size: '300', beds: '', facilityIds: [],
+  });
   const [editLoading, setEditLoading]   = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Add modal
   const [showAdd, setShowAdd]           = useState(false);
-  const [addForm, setAddForm]           = useState<RoomForm>({ name: '', description: '', price: '' });
+  const [addForm, setAddForm]           = useState<AddForm>(EMPTY_ADD_FORM);
   const [addLoading, setAddLoading]     = useState(false);
+
+  // New facility form (inside edit modal)
+  const [newFacility, setNewFacility]   = useState({ label: '', icon: 'Check', category: 'general' });
+  const [addingFacility, setAddingFacility] = useState(false);
+
+  const [maintenanceLoadingId, setMaintenanceLoadingId] = useState<string | null>(null);
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -53,9 +128,19 @@ export default function RoomsPage() {
     if (data) setRooms(data);
     else setError(true);
     setLoading(false);
+    return data;
   }, []);
 
-  useEffect(() => { fetchRooms(); }, [fetchRooms]);
+  const fetchFacilities = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/facilities');
+      if (res.ok) setFacilities(await res.json());
+    } catch {
+      // Non-fatal — facility checklist will just show empty until retried.
+    }
+  }, []);
+
+  useEffect(() => { fetchRooms(); fetchFacilities(); }, [fetchRooms, fetchFacilities]);
 
   const filtered = rooms.filter(r => {
     const q = searchQuery.toLowerCase();
@@ -68,8 +153,23 @@ export default function RoomsPage() {
 
   function openEdit(room: Room) {
     setEditRoom(room);
-    setEditForm({ name: room.name, description: room.description, price: String(room.price) });
+    setEditForm({
+      name: room.name,
+      description: room.description,
+      price: String(room.price),
+      maxGuests: String(room.maxGuests),
+      size: String(room.size),
+      beds: room.beds,
+      facilityIds: room.facilities.map(f => f.id),
+    });
     setActionMsg('');
+  }
+
+  async function refreshEditRoom(roomId: string) {
+    const fresh = await fetchRooms();
+    const match = fresh?.find(r => r.id === roomId);
+    if (match) setEditRoom(match);
+    return match;
   }
 
   async function handleEditSave() {
@@ -83,16 +183,16 @@ export default function RoomsPage() {
           name:        editForm.name,
           description: editForm.description,
           price:       parseFloat(editForm.price),
+          maxGuests:   parseInt(editForm.maxGuests, 10) || 1,
+          size:        parseInt(editForm.size, 10) || 0,
+          beds:        editForm.beds,
+          facilityIds: editForm.facilityIds,
         }),
       });
       if (!res.ok) throw new Error();
-      setRooms(prev => prev.map(r =>
-        r.id === editRoom.id
-          ? { ...r, name: editForm.name, description: editForm.description, price: parseFloat(editForm.price) }
-          : r
-      ));
       setEditRoom(null);
       setActionMsg('Room updated.');
+      await fetchRooms();
     } catch {
       setActionMsg('Failed to update room.');
     } finally {
@@ -114,14 +214,119 @@ export default function RoomsPage() {
         }),
       });
       if (!res.ok) throw new Error();
+      const created = await res.json();
       setShowAdd(false);
-      setAddForm({ name: '', description: '', price: '' });
-      setActionMsg('Room added.');
-      await fetchRooms();
+      setAddForm(EMPTY_ADD_FORM);
+      setActionMsg('Room added. Add photos and facilities below.');
+      const fresh = await fetchRooms();
+      const newRoom = fresh?.find(r => r.id === created.id);
+      if (newRoom) openEdit(newRoom);
     } catch {
       setActionMsg('Failed to add room.');
     } finally {
       setAddLoading(false);
+    }
+  }
+
+  async function handleStartMaintenance(roomId: string) {
+    setMaintenanceLoadingId(roomId);
+    try {
+      const res = await fetch(`/api/admin/rooms/${roomId}/maintenance`, { method: 'POST' });
+      if (!res.ok) throw new Error();
+      setActionMsg('Room marked under maintenance — hidden from the public site.');
+      await fetchRooms();
+    } catch {
+      setActionMsg('Failed to mark room under maintenance.');
+    } finally {
+      setMaintenanceLoadingId(null);
+    }
+  }
+
+  async function handleResolveMaintenance(roomId: string) {
+    setMaintenanceLoadingId(roomId);
+    try {
+      const res = await fetch(`/api/admin/rooms/${roomId}/maintenance`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setActionMsg('Maintenance resolved — room is bookable again.');
+      await fetchRooms();
+    } catch {
+      setActionMsg('Failed to resolve maintenance.');
+    } finally {
+      setMaintenanceLoadingId(null);
+    }
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !editRoom) return;
+
+    setImageUploading(true);
+    try {
+      const { url, publicId } = await uploadRoomImageToCloudinary(file);
+      const res = await fetch(`/api/admin/rooms/${editRoom.id}/images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, publicId }),
+      });
+      if (!res.ok) throw new Error();
+      await refreshEditRoom(editRoom.id);
+    } catch {
+      setActionMsg('Failed to upload image.');
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  async function handleDeleteImage(imageId: string) {
+    if (!editRoom) return;
+    try {
+      const res = await fetch(`/api/admin/rooms/${editRoom.id}/images/${imageId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      await refreshEditRoom(editRoom.id);
+    } catch {
+      setActionMsg('Failed to delete image.');
+    }
+  }
+
+  async function handleSetCover(imageId: string) {
+    if (!editRoom) return;
+    try {
+      const res = await fetch(`/api/admin/rooms/${editRoom.id}/images/${imageId}`, { method: 'PATCH' });
+      if (!res.ok) throw new Error();
+      await refreshEditRoom(editRoom.id);
+    } catch {
+      setActionMsg('Failed to update cover image.');
+    }
+  }
+
+  function toggleFacility(id: string) {
+    setEditForm(f => ({
+      ...f,
+      facilityIds: f.facilityIds.includes(id)
+        ? f.facilityIds.filter(x => x !== id)
+        : [...f.facilityIds, id],
+    }));
+  }
+
+  async function handleAddFacility() {
+    if (!newFacility.label.trim()) return;
+    setAddingFacility(true);
+    try {
+      const res = await fetch('/api/admin/facilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFacility),
+      });
+      if (!res.ok) throw new Error();
+      const created: FacilityItem = await res.json();
+      setFacilities(prev => [...prev, created].sort((a, b) => a.label.localeCompare(b.label)));
+      setEditForm(f => ({ ...f, facilityIds: [...f.facilityIds, created.id] }));
+      setNewFacility({ label: '', icon: 'Check', category: 'general' });
+    } catch {
+      setActionMsg('Failed to add facility. It may already exist.');
+    } finally {
+      setAddingFacility(false);
     }
   }
 
@@ -139,12 +344,17 @@ export default function RoomsPage() {
     </div>
   );
 
+  const facilitiesByCategory = FACILITY_CATEGORIES.map(category => ({
+    category,
+    items: facilities.filter(f => f.category === category),
+  })).filter(g => g.items.length > 0);
+
   return (
     <div className="p-6 min-h-screen animate-fadeIn">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold mb-2">Rooms</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage hotel rooms and availability</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage hotel rooms, photos, and facilities</p>
         </div>
         <button onClick={fetchRooms} className="text-sm flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary">
           <RefreshCw size={14} /> Refresh
@@ -202,42 +412,75 @@ export default function RoomsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(room => (
-            <div key={room.id} className="glass-card hover-lift rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-48 bg-gradient-to-br from-primary-light to-primary/20 relative flex items-center justify-center">
-                <span className="text-primary/40 text-4xl font-bold">{room.name.charAt(0)}</span>
-                <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[room.status]}`}>
-                  {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
-                </span>
-              </div>
-              <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">{room.name}</h3>
-                  {room.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{room.description}</p>
+          {filtered.map(room => {
+            const cover = room.images[0];
+            return (
+              <div key={room.id} className="glass-card hover-lift rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-48 bg-gradient-to-br from-primary-light to-primary/20 relative flex items-center justify-center overflow-hidden">
+                  {cover ? (
+                    <img src={cover.url} alt={room.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-primary/40 text-4xl font-bold">{room.name.charAt(0)}</span>
                   )}
+                  <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[room.status]}`}>
+                    {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
-                  <div className="flex items-center gap-2 text-sm">
-                    <DollarSign size={16} className="text-gray-400 dark:text-gray-500" />
-                    <span className="text-gray-600 dark:text-gray-400">LKR {room.price.toLocaleString()}/night</span>
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold">{room.name}</h3>
+                    {room.description && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{room.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <div className="flex items-center gap-1">
+                      <Users size={14} /> <span>{room.maxGuests}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Maximize size={14} /> <span>{room.size} sqft</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign size={14} /> <span>LKR {room.price.toLocaleString()}</span>
+                    </div>
                   </div>
                   {room.activeTaskCount > 0 && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm mb-4">
                       <AlertCircle size={16} className="text-yellow-500" />
                       <span className="text-yellow-600">{room.activeTaskCount} active task{room.activeTaskCount > 1 ? 's' : ''}</span>
                     </div>
                   )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEdit(room)}
+                      className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      <Edit size={14} /> Edit
+                    </button>
+                    {room.status === 'maintenance' ? (
+                      <button
+                        onClick={() => handleResolveMaintenance(room.id)}
+                        disabled={maintenanceLoadingId === room.id}
+                        className="flex-1 px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors text-sm flex items-center justify-center gap-2"
+                      >
+                        {maintenanceLoadingId === room.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                        Resolve
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleStartMaintenance(room.id)}
+                        disabled={maintenanceLoadingId === room.id}
+                        className="flex-1 px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 disabled:opacity-50 transition-colors text-sm flex items-center justify-center gap-2"
+                      >
+                        {maintenanceLoadingId === room.id ? <Loader2 size={14} className="animate-spin" /> : <Wrench size={14} />}
+                        Maintenance
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button
-                  onClick={() => openEdit(room)}
-                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
-                >
-                  <Edit size={14} /> Edit Room
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -259,43 +502,206 @@ export default function RoomsPage() {
       {/* Edit Room Modal */}
       {editRoom && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="p-6 border-b flex items-center justify-between">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-inherit z-10">
               <h2 className="text-xl font-heading font-bold">Edit Room</h2>
-              <button onClick={() => setEditRoom(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"><X size={20} /></button>
+              <button onClick={() => setEditRoom(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600"><X size={20} /></button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room Name *</label>
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+            <div className="p-6 space-y-6">
+              {/* Basic fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room Name *</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <textarea
+                    rows={3}
+                    value={editForm.description}
+                    onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price per Night (LKR) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.price}
+                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Guests</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editForm.maxGuests}
+                    onChange={e => setEditForm({ ...editForm, maxGuests: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size (sqft)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.size}
+                    onChange={e => setEditForm({ ...editForm, size: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                    <BedDouble size={14} /> Bed Configuration
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1 King Bed"
+                    value={editForm.beds}
+                    onChange={e => setEditForm({ ...editForm, beds: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
               </div>
+
+              {/* Images */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={editForm.description}
-                  onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Photos</label>
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {editRoom.images.map((img, i) => (
+                    <div key={img.id} className="relative w-24 h-24 rounded-lg overflow-hidden group border border-gray-200 dark:border-gray-700">
+                      <img src={img.url} alt="" className="w-full h-full object-cover" />
+                      {i === 0 && (
+                        <span className="absolute top-1 left-1 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        {i !== 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCover(img.id)}
+                            title="Set as cover"
+                            className="w-7 h-7 rounded-full bg-white/90 text-primary flex items-center justify-center hover:bg-white"
+                          >
+                            <Star size={14} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteImage(img.id)}
+                          title="Delete"
+                          className="w-7 h-7 rounded-full bg-white/90 text-red-600 flex items-center justify-center hover:bg-white"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={imageUploading}
+                    className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                  >
+                    {imageUploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                    <span className="text-[10px] mt-1">{imageUploading ? 'Uploading…' : 'Add photo'}</span>
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                </div>
               </div>
+
+              {/* Facilities */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price per Night (LKR) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editForm.price}
-                  onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Facilities</label>
+                <div className="space-y-4 max-h-64 overflow-y-auto pr-1 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  {facilitiesByCategory.map(group => (
+                    <div key={group.category}>
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        {CATEGORY_LABELS[group.category] || group.category}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {group.items.map(facility => {
+                          const Icon = getFacilityIcon(facility.icon);
+                          const checked = editForm.facilityIds.includes(facility.id);
+                          return (
+                            <label
+                              key={facility.id}
+                              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer border transition-colors ${
+                                checked ? 'border-primary bg-primary-light/60 text-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleFacility(facility.id)}
+                                className="accent-primary"
+                              />
+                              <Icon size={14} />
+                              <span className="truncate">{facility.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {facilities.length === 0 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No facilities yet — add one below.</p>
+                  )}
+                </div>
+
+                {/* Add new facility */}
+                <div className="mt-3 flex flex-wrap items-end gap-2">
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">New facility name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Private Pool"
+                      value={newFacility.label}
+                      onChange={e => setNewFacility({ ...newFacility, label: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Icon</label>
+                    <select
+                      value={newFacility.icon}
+                      onChange={e => setNewFacility({ ...newFacility, icon: e.target.value })}
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                    >
+                      {FACILITY_ICON_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Category</label>
+                    <select
+                      value={newFacility.category}
+                      onChange={e => setNewFacility({ ...newFacility, category: e.target.value })}
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                    >
+                      {FACILITY_CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>)}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddFacility}
+                    disabled={addingFacility || !newFacility.label.trim()}
+                    className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 text-sm flex items-center gap-1"
+                  >
+                    {addingFacility ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="p-6 border-t flex gap-3">
-              <button onClick={() => setEditRoom(null)} className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 transition-colors">Cancel</button>
+            <div className="p-6 border-t flex gap-3 sticky bottom-0 bg-inherit">
+              <button onClick={() => setEditRoom(null)} className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 transition-colors">Close</button>
               <button
                 onClick={handleEditSave}
                 disabled={editLoading || !editForm.name || !editForm.price}
@@ -315,9 +721,12 @@ export default function RoomsPage() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Add New Room</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"><X size={20} /></button>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Add the basics first — you'll add photos, guest capacity, and facilities right after.
+              </p>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room Name *</label>
                 <input

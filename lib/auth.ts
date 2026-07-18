@@ -3,29 +3,27 @@ export interface AdminUser {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
 }
 
-export const getAuthToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('adminToken');
-};
-
+// The real auth token lives only in an httpOnly cookie (set by /api/auth/login) —
+// it is never exposed to JS, so it can't be read by an XSS payload. `adminUser` here
+// is just cached profile info for the UI; it grants no access on its own since every
+// /api/admin/* route independently verifies the cookie via lib/admin-auth.ts.
 export const getAdminUser = (): AdminUser | null => {
   if (typeof window === 'undefined') return null;
   const user = localStorage.getItem('adminUser');
   return user ? JSON.parse(user) : null;
 };
 
-export const setAuthToken = (token: string, user: AdminUser): void => {
-  localStorage.setItem('adminToken', token);
+export const setAdminUser = (user: AdminUser): void => {
   localStorage.setItem('adminUser', JSON.stringify(user));
 };
 
 export const clearAuth = (): void => {
-  localStorage.removeItem('adminToken');
   localStorage.removeItem('adminUser');
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!getAuthToken();
+  return !!getAdminUser();
 };

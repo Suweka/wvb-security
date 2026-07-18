@@ -1,12 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+const ALLOWED_FOLDERS = new Set(['bank-receipts', 'admin-avatars', 'room-images']);
+
+export async function GET(request: NextRequest) {
   try {
-    const timestamp = Math.round(Date.now() / 1000);
-    const folder    = 'bank-receipts';
+    const requested = request.nextUrl.searchParams.get('folder');
+    const folder     = requested && ALLOWED_FOLDERS.has(requested) ? requested : 'bank-receipts';
+    const timestamp  = Math.round(Date.now() / 1000);
 
     const signature = cloudinary.utils.api_sign_request(
       { timestamp, folder },

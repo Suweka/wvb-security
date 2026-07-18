@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendNewsletterBroadcast } from '@/lib/email';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function POST(request: NextRequest) {
+  if (!requireAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { subject, message } = await request.json();
 

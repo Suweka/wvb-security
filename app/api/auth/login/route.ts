@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { logAudit, getClientIp } from '@/lib/audit-log';
 
-// Mock admin users database - Replace with real database query
+// Mock admin users database - Replace with a real database-backed Admin table.
+// Passwords are bcrypt hashes (cost 12) of 'admin123' / 'manager123' — never store plaintext.
 const ADMIN_USERS = [
   {
     id: 1,
     name: 'Jaylan Dorwart',
     email: 'admin@lodgify.com',
-    password: 'admin123', // In production, use hashed passwords
+    passwordHash: '$2b$12$vMm1CGebMuL9x801YEKuju7/r05P6q6JtiPmqTojk8lLMbtcFkr3m',
     role: 'admin',
   },
   {
     id: 2,
     name: 'Manager User',
     email: 'manager@lodgify.com',
-    password: 'manager123',
+    passwordHash: '$2b$12$ZE3kG9/ODSDLSvIsDDKBbu/o5mbQGD9e.GF2FoeY8qPqeXRKe8xLm',
     role: 'manager',
   },
 ];
@@ -33,17 +36,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find admin user
-    const admin = ADMIN_USERS.find(
-      (user) => user.email === email && user.password === password
-    );
+    // Find admin user by email, then verify the password against its bcrypt hash.
+    // Always run bcrypt.compare (even against a dummy hash) so a nonexistent email
+    // doesn't respond faster than a wrong password — avoids leaking valid emails via timing.
+    const admin = ADMIN_USERS.find((user) => user.email === email);
+    const DUMMY_HASH = '$2b$12$t9TznmjR4IkIf3Ovp2X9c.CThzVG8eVSI5wL17I5fKKLALBKal4oC';
+    const isValid = await bcrypt.compare(password, admin?.passwordHash ?? DUMMY_HASH);
 
-    if (!admin) {
+    if (!admin || !isValid) {
+      await logAudit({
+        actor: email,
+        action: 'LOGIN_FAILED',
+        entityType: 'Auth',
+        metadata: { ip: getClientIp(request) },
+      });
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
       );
     }
+
+    await logAudit({
+      actor: admin.email,
+      action: 'LOGIN_SUCCESS',
+      entityType: 'Auth',
+      metadata: { ip: getClientIp(request) },
+    });
 
     // Create JWT token
     const token = jwt.sign(
@@ -72,9 +90,12 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    // Set httpOnly cookie for additional security
+    // httpOnly cookie is the actual auth mechanism admin API routes check —
+    // not readable by JS, so it can't be stolen via an XSS payload.
     response.cookies.set('adminToken', token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 86400, // 24 hours
       path: '/',
     });

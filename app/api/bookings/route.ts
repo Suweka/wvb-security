@@ -4,15 +4,6 @@ import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 import { sendBankTransferPendingEmail } from '@/lib/email';
 
-const SLUG_TO_NAME: Record<string, string> = {
-  'deluxe-room':   'Deluxe Room',
-  'junior-suite':  'Junior Suite',
-  'family-room':   'Family Room',
-  'premium-suite': 'Premium Suite',
-  'single-room':   'Single Room',
-  'garden-view':   'Garden View Room',
-};
-
 function generateBookingNumber(): string {
   const year = new Date().getFullYear();
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -20,27 +11,13 @@ function generateBookingNumber(): string {
 }
 
 async function resolveRoom(slug: string) {
-  const targetName = SLUG_TO_NAME[slug] || slug;
-
-  // 1. Exact name match (case-insensitive)
-  let room = await prisma.room.findFirst({
-    where: { name: { equals: targetName, mode: 'insensitive' } },
+  return prisma.room.findUnique({
+    where: { slug },
+    include: {
+      // Rooms with an open MAINTENANCE task are treated as unbookable below.
+      tasks: { where: { category: 'MAINTENANCE', status: { not: 'COMPLETED' } }, select: { id: true } },
+    },
   });
-
-  // 2. Partial match on first word (e.g. "Deluxe" matches "Deluxe Rooms")
-  if (!room) {
-    const firstWord = targetName.split(' ')[0];
-    room = await prisma.room.findFirst({
-      where: { name: { contains: firstWord, mode: 'insensitive' } },
-    });
-  }
-
-  // 3. Fall back to any room so the booking still gets created
-  if (!room) {
-    room = await prisma.room.findFirst();
-  }
-
-  return room;
 }
 
 export async function POST(request: NextRequest) {
@@ -59,17 +36,37 @@ export async function POST(request: NextRequest) {
     // Resolve each slug → DB room (deduplicate by room ID to avoid conflicts)
     const resolvedRooms: NonNullable<Awaited<ReturnType<typeof resolveRoom>>>[] = [];
     const seenIds = new Set<string>();
+    const missingSlugs: string[] = [];
+    const maintenanceSlugs: string[] = [];
 
     for (const slug of rooms as string[]) {
       const room = await resolveRoom(slug);
-      if (room && !seenIds.has(room.id)) {
+      if (!room) {
+        missingSlugs.push(slug);
+      } else if (room.tasks.length > 0) {
+        maintenanceSlugs.push(slug);
+      } else if (!seenIds.has(room.id)) {
         resolvedRooms.push(room);
         seenIds.add(room.id);
       }
     }
 
+    if (maintenanceSlugs.length > 0) {
+      return NextResponse.json(
+        { error: `Room(s) currently under maintenance and unavailable to book: ${maintenanceSlugs.join(', ')}.` },
+        { status: 409 }
+      );
+    }
+
+    if (missingSlugs.length > 0) {
+      return NextResponse.json(
+        { error: `Room(s) not found: ${missingSlugs.join(', ')}. Please refresh and try again.` },
+        { status: 400 }
+      );
+    }
+
     if (resolvedRooms.length === 0) {
-      return NextResponse.json({ error: 'No rooms available in database. Please contact the hotel.' }, { status: 400 });
+      return NextResponse.json({ error: 'No rooms selected. Please choose at least one room.' }, { status: 400 });
     }
 
     // Create GuestCheckout record

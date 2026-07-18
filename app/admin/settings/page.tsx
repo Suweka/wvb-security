@@ -1,17 +1,76 @@
 ﻿'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Shield, MapPin, Phone, LogOut } from 'lucide-react';
-import { getAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
+import { User, Mail, Shield, MapPin, Phone, LogOut, Camera, Loader2 } from 'lucide-react';
+import { getAdminUser, setAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
+
+async function uploadAvatarToCloudinary(file: File): Promise<string> {
+  const sigRes = await fetch('/api/upload/signature?folder=admin-avatars');
+  if (!sigRes.ok) throw new Error('Could not get upload signature');
+  const { signature, timestamp, folder, cloudName, apiKey } = await sigRes.json();
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('signature', signature);
+  form.append('timestamp', String(timestamp));
+  form.append('api_key', apiKey);
+  form.append('folder', folder);
+
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!uploadRes.ok) throw new Error('Image upload failed');
+  const data = await uploadRes.json();
+  return data.secure_url as string;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setUser(getAdminUser());
+    const stored = getAdminUser();
+    setUser(stored);
+    if (stored?.email) {
+      fetch(`/api/admin/profile?email=${encodeURIComponent(stored.email)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.avatarUrl) setUser(u => (u ? { ...u, avatarUrl: data.avatarUrl } : u));
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+
+    setUploadError('');
+    setUploading(true);
+    try {
+      const avatarUrl = await uploadAvatarToCloudinary(file);
+      const res = await fetch('/api/admin/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, avatarUrl }),
+      });
+      if (!res.ok) throw new Error('Failed to save photo');
+
+      const updatedUser = { ...user, avatarUrl };
+      setUser(updatedUser);
+      setAdminUser(updatedUser);
+    } catch {
+      setUploadError('Could not upload photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -35,6 +94,51 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold mb-4">Admin Account</h2>
           {user ? (
             <div className="space-y-4">
+              {/* Profile Photo */}
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="relative">
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name}
+                      className="w-16 h-16 rounded-full object-cover ring-2 ring-white/70"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white flex items-center justify-center text-xl font-bold">
+                      {user.name?.charAt(0).toUpperCase() || 'A'}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+                    title="Change photo"
+                  >
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarSelect}
+                    className="hidden"
+                  />
+                </div>
+                <div>
+                  <p className="font-medium">{user.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    {uploading ? 'Uploading…' : 'Change photo'}
+                  </button>
+                  {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center">
                   <User size={18} />

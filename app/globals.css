@@ -220,6 +220,10 @@
   animation: slideUpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.8s;
 }
+.chat-widget-entrance {
+  animation: slideUpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.95s;
+}
 
 /* ── Glassmorphism + micro-interaction system (site-wide) ─ */
 @layer utilities {

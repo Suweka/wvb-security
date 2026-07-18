@@ -24,40 +24,20 @@ import {
   Plus,
   Upload,
   Clock,
+  Smartphone,
+  Globe,
+  Landmark,
 } from 'lucide-react';
 
 type BookingStep = 'dates' | 'details' | 'payment' | 'confirmation';
 
-const ROOMS = [
-  {
-    id: 'deluxe-room',
-    name: 'Deluxe Room',
-    price: 15000,
-    maxGuests: 2,
-    image: '/images/rooms/deluxe.jpeg',
-  },
-  {
-    id: 'junior-suite',
-    name: 'Junior Suite',
-    price: 22000,
-    maxGuests: 3,
-    image: '/images/rooms/junior.jpeg',
-  },
-  {
-    id: 'family-room',
-    name: 'Family Room',
-    price: 28000,
-    maxGuests: 4,
-    image: '/images/rooms/family.jpeg',
-  },
-  {
-    id: 'premium-suite',
-    name: 'Premium Suite',
-    price: 35000,
-    maxGuests: 2,
-    image: '/images/rooms/premium.jpeg',
-  },
-];
+interface RoomOption {
+  id: string;
+  name: string;
+  price: number;
+  maxGuests: number;
+  image: string | null;
+}
 
 function parseLocalDate(dateStr: string): Date | null {
   const d = new Date(dateStr + 'T00:00:00');
@@ -67,10 +47,32 @@ function parseLocalDate(dateStr: string): Date | null {
 function BookingPageContent() {
   const searchParams = useSearchParams();
 
+  const [rooms, setRooms] = useState<RoomOption[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+
   const [selectedRooms, setSelectedRooms] = useState<string[]>(() => {
     const p = searchParams.get('room');
-    return p && ROOMS.some(r => r.id === p) ? [p] : ['deluxe-room'];
+    return p ? [p] : [];
   });
+
+  // Load real rooms from the DB, then make sure the selection (from the URL or default) is valid.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/rooms')
+      .then(r => r.json())
+      .then((data: RoomOption[]) => {
+        if (cancelled) return;
+        setRooms(data);
+        setSelectedRooms(prev => {
+          const valid = prev.filter(id => data.some(r => r.id === id));
+          if (valid.length > 0) return valid;
+          return data[0] ? [data[0].id] : [];
+        });
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRoomsLoading(false); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [checkInDate, setCheckInDate] = useState<Date | null>(() => {
     const p = searchParams.get('checkIn');
@@ -139,7 +141,7 @@ function BookingPageContent() {
     return false;
   };
 
-  const selectedRoomObjects = ROOMS.filter(r => selectedRooms.includes(r.id));
+  const selectedRoomObjects = rooms.filter(r => selectedRooms.includes(r.id));
   const totalMaxGuests = selectedRoomObjects.reduce((sum, r) => sum + r.maxGuests, 0) || 1;
   const totalNightlyRate = selectedRoomObjects.reduce((sum, r) => sum + r.price, 0);
 
@@ -149,7 +151,7 @@ function BookingPageContent() {
     const newSelected = isSelected
       ? selectedRooms.filter(id => id !== roomId)
       : [...selectedRooms, roomId];
-    const newMax = ROOMS.filter(r => newSelected.includes(r.id)).reduce((sum, r) => sum + r.maxGuests, 0);
+    const newMax = rooms.filter(r => newSelected.includes(r.id)).reduce((sum, r) => sum + r.maxGuests, 0);
     setSelectedRooms(newSelected);
     if (guests > newMax) setGuests(newMax);
   };
@@ -446,7 +448,15 @@ function BookingPageContent() {
                     <span className="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">You can select multiple rooms</span>
                   </label>
                   <div className="space-y-3">
-                    {ROOMS.map((r) => {
+                    {roomsLoading && (
+                      <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 py-4">
+                        <Loader2 size={16} className="animate-spin" /> Loading rooms…
+                      </div>
+                    )}
+                    {!roomsLoading && rooms.length === 0 && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No rooms are available right now. Please check back later.</p>
+                    )}
+                    {rooms.map((r) => {
                       const isSelected = selectedRooms.includes(r.id);
                       return (
                         <motion.div
@@ -460,11 +470,17 @@ function BookingPageContent() {
                               : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 hover:bg-white/60 dark:hover:bg-white/10 glass-card'
                           }`}
                         >
-                          <img
-                            src={r.image}
-                            alt={r.name}
-                            className="w-16 h-14 object-cover rounded-md flex-shrink-0 ring-1 ring-black/5"
-                          />
+                          {r.image ? (
+                            <img
+                              src={r.image}
+                              alt={r.name}
+                              className="w-16 h-14 object-cover rounded-md flex-shrink-0 ring-1 ring-black/5"
+                            />
+                          ) : (
+                            <div className="w-16 h-14 rounded-md flex-shrink-0 ring-1 ring-black/5 bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center text-primary/40 font-bold">
+                              {r.name.charAt(0)}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 dark:text-gray-100">{r.name}</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -742,8 +758,8 @@ function BookingPageContent() {
                 <div className="space-y-3 mb-4">
                   {[
                     { value: 'card'    as const, label: 'Credit / Debit Card', sub: 'Visa, Mastercard, Amex',           icon: <CreditCard className="text-primary" size={24} /> },
-                    { value: 'helapay' as const, label: 'HelaPay',              sub: 'Dialog Genie, Frimi & more',       icon: <div className="w-6 h-6 bg-blue-500 rounded" /> },
-                    { value: 'webxpay' as const, label: 'WebXPay',              sub: 'Local Sri Lankan payment gateway', icon: <div className="w-6 h-6 bg-green-500 rounded" /> },
+                    { value: 'helapay' as const, label: 'HelaPay',              sub: 'Dialog Genie, Frimi & more',       icon: <Smartphone className="text-primary" size={24} /> },
+                    { value: 'webxpay' as const, label: 'WebXPay',              sub: 'Local Sri Lankan payment gateway', icon: <Globe className="text-primary" size={24} /> },
                   ].map((m) => (
                     <motion.div key={m.value} onClick={() => setPaymentMethod(m.value)}
                       whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}
@@ -774,11 +790,18 @@ function BookingPageContent() {
                   className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 mb-6 ${paymentMethod === 'bank' ? 'border-primary bg-primary-light shadow-lg shadow-primary/20' : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 glass-card'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-500 rounded" />
+                    <Landmark className="text-primary" size={24} />
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm">Direct Bank Transfer</h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Pay to our account — booking confirmed after receipt</p>
                     </div>
+                    <AnimatePresence>
+                      {paymentMethod === 'bank' && (
+                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="ml-auto">
+                          <Check className="text-primary" size={18} />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                     <AnimatePresence>
                       {paymentMethod === 'bank' && (
                         <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
@@ -1009,7 +1032,13 @@ function BookingPageContent() {
               <div className="mb-4 pb-4 border-b space-y-3">
                 {selectedRoomObjects.map((r) => (
                   <div key={r.id} className="flex items-center gap-3">
-                    <img src={r.image} alt={r.name} className="w-16 h-12 object-cover rounded-md flex-shrink-0" />
+                    {r.image ? (
+                      <img src={r.image} alt={r.name} className="w-16 h-12 object-cover rounded-md flex-shrink-0" />
+                    ) : (
+                      <div className="w-16 h-12 rounded-md flex-shrink-0 bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center text-primary/40 font-bold text-sm">
+                        {r.name.charAt(0)}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">{r.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(r.price)}/night</p>

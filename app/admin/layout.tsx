@@ -4,16 +4,8 @@ import { AdminSidebar } from '@/components/admin/Sidebar';
 import { Bell, Search, Settings, LogOut } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import { getAdminUser, clearAuth } from '@/lib/auth';
+import { getAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-
-interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
 
 interface SearchResult {
   type:     'booking' | 'guest';
@@ -60,6 +52,12 @@ export default function AdminLayout({
     } else {
       setUser(adminUser);
       setLoading(false);
+      fetch(`/api/admin/profile?email=${encodeURIComponent(adminUser.email)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.avatarUrl) setUser(u => (u ? { ...u, avatarUrl: data.avatarUrl } : u));
+        })
+        .catch(() => {});
     }
   }, [router, pathname]);
 
@@ -200,13 +198,19 @@ export default function AdminLayout({
               </div>
 
               <div className="flex items-center gap-3 pl-4 border-l">
-                <Image
-                  src="/images/avatars/admin.jpg"
-                  alt={user.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
-                />
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    {user.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                )}
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold">{user.name}</h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{user.role}</p>
