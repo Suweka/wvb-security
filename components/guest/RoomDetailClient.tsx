@@ -116,41 +116,66 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
   return (
     <div className="min-h-screen bg-white animate-fadeIn">
       {/* Image Gallery */}
-      <section className="relative isolate overflow-hidden h-[500px]">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-[500px]">
-          <div className="md:col-span-3 relative overflow-hidden group">
-            <GalleryImage
-              src={images[0]}
-              name={room.name}
-              className="w-full h-full object-cover cursor-pointer"
-              onClick={() => hasImages && setShowLightbox(true)}
-            />
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors pointer-events-none" />
-            {hasImages && (
-              <div className="absolute bottom-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg text-sm">
-                View All Photos
-              </div>
-            )}
-          </div>
-          <div className="hidden md:grid grid-rows-2 gap-2">
-            <div className="relative overflow-hidden">
+      <section className="relative isolate overflow-hidden h-[320px] sm:h-[420px] md:h-[500px] bg-gray-100 dark:bg-gray-900 group">
+        <div
+          className="flex h-full transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+        >
+          {(hasImages ? images : [undefined]).map((src, i) => (
+            <div key={i} className="w-full h-full flex-shrink-0 relative">
               <GalleryImage
-                src={images[1] ?? images[0]}
+                src={src}
                 name={room.name}
                 className="w-full h-full object-cover cursor-pointer"
                 onClick={() => hasImages && setShowLightbox(true)}
               />
             </div>
-            <div className="relative overflow-hidden">
-              <GalleryImage
-                src={images[2] ?? images[0]}
-                name={room.name}
-                className="w-full h-full object-cover cursor-pointer"
-                onClick={() => hasImages && setShowLightbox(true)}
-              />
-            </div>
-          </div>
+          ))}
         </div>
+
+        {hasImages && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+        )}
+
+        {hasImages && images.length > 1 && (
+          <>
+            <button
+              onClick={prevImage}
+              aria-label="Previous photo"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              onClick={nextImage}
+              aria-label="Next photo"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <ChevronRight size={22} />
+            </button>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentImageIndex(i)}
+                  aria-label={`Go to photo ${i + 1}`}
+                  className={`h-2.5 rounded-full transition-all ${
+                    i === currentImageIndex ? 'w-6 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/75'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {hasImages && (
+          <button
+            onClick={() => setShowLightbox(true)}
+            className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-black/85 transition-colors"
+          >
+            {images.length > 1 ? `View All Photos (${images.length})` : 'View Photo'}
+          </button>
+        )}
       </section>
 
       {/* Content */}
