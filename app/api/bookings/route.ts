@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { sendBankTransferPendingEmail } from '@/lib/email';
 
 // Builds a shuman-readable, roughly-unique booking reference like "WVB-2026-A1B2C3" (WVB = White Vintage Bungalow). 
-function generateBookingNumber(): string {
+export function generateBookingNumber(): string {
   const year = new Date().getFullYear();
   // Math.random() gives a decimal like 0.482991...
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();

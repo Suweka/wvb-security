@@ -5,11 +5,16 @@
 'use server'; // Marks every export in this file as a Next.js Server Action — runs only on the server, callable directly from client components.
 
 import { prisma } from '@/lib/prisma';
+import { requireAdminAction } from '@/lib/admin-auth';
 
 // Gathers the headline numbers shown on the admin dashboard: booking counts by
 // status, total paid revenue, room availability today, the 5 most recent
 // bookings, and the 5 highest-priority open tasks.
 export async function getDashboardStats() {
+  // Server Actions like this one are callable directly (bypassing the React
+  // page and its client-side redirect entirely), so the auth check has to
+  // live in here, not just on the page that calls it.
+  if (!requireAdminAction()) return null;
   try {
     // 1. Get total bookings and status counts
     const totalBookings = await prisma.booking.count();
@@ -74,6 +79,30 @@ export async function getDashboardStats() {
       orderBy: { priority: 'desc' }
     });
 
+    // 6. Bookings by source (website vs phone/WhatsApp/walk-in logged by an
+    // admin). groupBy gives us one row per source value that actually has at
+    // least one booking; we then fill in any missing sources as 0 so the
+    // dashboard always shows all four bars, not just whichever exist so far.
+    const sourceCounts = await prisma.booking.groupBy({
+      by: ['source'],
+      _count: { _all: true },
+    });
+    const countBySource: Record<string, number> = { WEBSITE: 0, PHONE: 0, WHATSAPP: 0, WALK_IN: 0 };
+    sourceCounts.forEach(row => { countBySource[row.source] = row._count._all; });
+    const SOURCE_LABELS: Record<string, string> = {
+      WEBSITE: 'Website (Direct)',
+      PHONE: 'Phone Call',
+      WHATSAPP: 'WhatsApp',
+      WALK_IN: 'Walk-in / Guest Show-up',
+    };
+    const bookingsBySource = Object.entries(countBySource).map(([source, count]) => ({
+      source,
+      label: SOURCE_LABELS[source],
+      count,
+      // Percentage of all bookings this source accounts for, rounded to a whole number.
+      percentage: totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0,
+    }));
+
     return {
       stats: {
         totalBookings,
@@ -96,7 +125,8 @@ export async function getDashboardStats() {
         title: t.title,
         priority: t.priority.toLowerCase(),
         time: t.dueAt ? t.dueAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No deadline'
-      }))
+      })),
+      bookingsBySource
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
@@ -107,6 +137,7 @@ export async function getDashboardStats() {
 // Fetches every room along with its current status (available / booked /
 // under maintenance / being cleaned), used by the admin "Rooms" page.
 export async function getRoomsData() {
+  if (!requireAdminAction()) return null;
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // start of today, for the "is this room booked right now" check below
@@ -161,6 +192,7 @@ export async function getRoomsData() {
 // Fetches every booking (both from registered users and guest checkouts) for
 // the admin "Reservations" table, including any bank transfer receipt attached.
 export async function getReservationsData() {
+  if (!requireAdminAction()) return null;
   try {
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: 'desc' },
@@ -222,6 +254,7 @@ export async function getReservationsData() {
 // `User` accounts and one-off `GuestCheckout` records (people who booked without
 // creating an account), then sorting everyone together by join date.
 export async function getGuestsData() {
+  if (!requireAdminAction()) return null;
   try {
     const users = await prisma.user.findMany({
       where: { role: 'GUEST' },
@@ -290,6 +323,7 @@ export async function getGuestsData() {
 // reshaping Prisma's enum-style status/priority values into the lowercase
 // strings the UI expects.
 export async function getHousekeepingData() {
+  if (!requireAdminAction()) return null;
   try {
     const tasks = await prisma.task.findMany({
       where: { category: 'HOUSEKEEPING' },
@@ -316,6 +350,7 @@ export async function getHousekeepingData() {
 // Fetches non-cancelled bookings (ordered by check-in date) for the admin
 // booking calendar view.
 export async function getCalendarData() {
+  if (!requireAdminAction()) return null;
   try {
     const bookings = await prisma.booking.findMany({
       where: { status: { not: 'CANCELLED' } },
@@ -340,6 +375,7 @@ export async function getCalendarData() {
 // Fetches all guest reviews (with reviewer and room info) for the admin
 // "Reviews" page, newest first.
 export async function getReviewsData() {
+  if (!requireAdminAction()) return null;
   try {
     const reviews = await prisma.review.findMany({
       include: { user: true, room: true },
@@ -363,6 +399,7 @@ export async function getReviewsData() {
 // a rough occupancy-rate estimate, and a revenue-by-month breakdown for the
 // last 6 months (for a chart).
 export async function getFinancialsData() {
+  if (!requireAdminAction()) return null;
   try {
     const totalRevenue = await prisma.payment.aggregate({
       where: { status: 'PAID' },

@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   }
 
   // Destructure the combined dashboard payload into its parts for readability.
-  const { stats, roomStats, recentBookings, tasks } = data;
+  const { stats, roomStats, recentBookings, tasks, bookingsBySource } = data;
 
   // Configuration for the four top stat cards — pairs each metric with its
   // icon, color, and label so the JSX below can just .map() over this list.
@@ -131,12 +131,21 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Static placeholder data for the "Distribution" chart — this site only
-  // takes direct bookings (no third-party platforms like Booking.com yet),
-  // so it's hardcoded to 100%.
-  const bookingPlatforms = [
-    { name: 'Direct Booking', percentage: 100, color: 'bg-primary' },
-  ];
+  // Maps each booking source to the bar color shown in the "Distribution"
+  // card below. bookingsBySource itself comes from getDashboardStats(),
+  // computed with a Prisma groupBy over the Booking.source column.
+  const SOURCE_COLORS: Record<string, string> = {
+    WEBSITE:  'bg-primary',
+    PHONE:    'bg-blue-500',
+    WHATSAPP: 'bg-green-500',
+    WALK_IN:  'bg-amber-500',
+  };
+  const bookingPlatforms = (bookingsBySource || []).map((s: { source: string; label: string; count: number; percentage: number }) => ({
+    name: s.label,
+    count: s.count,
+    percentage: s.percentage,
+    color: SOURCE_COLORS[s.source] || 'bg-gray-400',
+  }));
 
   return (
     <div className="p-6 min-h-screen">
@@ -244,17 +253,17 @@ export default function AdminDashboard() {
           </div>
         </Reveal>
 
-        {/* Booking Platforms */}
+        {/* Booking Sources */}
         <Reveal delay={0.15} className="glass-card hover-lift rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Distribution</h3>
+            <h3 className="text-lg font-semibold">Booking Sources</h3>
           </div>
           <div className="space-y-4">
-            {bookingPlatforms.map((platform, index) => (
+            {bookingPlatforms.map((platform: { name: string; count: number; percentage: number; color: string }, index: number) => (
               <div key={index}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-gray-700 dark:text-gray-300">{platform.name}</span>
-                  <span className="font-semibold">{platform.percentage}%</span>
+                  <span className="font-semibold">{platform.count} &middot; {platform.percentage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
@@ -265,7 +274,7 @@ export default function AdminDashboard() {
               </div>
             ))}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-              All bookings are currently managed through the internal system.
+              Phone, WhatsApp, and walk-in bookings are logged manually via "New Reservation" on the Reservations page.
             </p>
           </div>
         </Reveal>

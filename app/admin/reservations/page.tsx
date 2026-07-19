@@ -79,6 +79,18 @@ function ReservationsContent() {
   const [editLoading,     setEditLoading]     = useState(false);
   const [editError,       setEditError]       = useState('');
 
+  // "New Reservation" modal — for logging a booking an admin took by phone,
+  // WhatsApp, or from a guest who walked in and booked in person.
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newForm, setNewForm] = useState({
+    source: 'PHONE' as 'PHONE' | 'WHATSAPP' | 'WALK_IN',
+    roomId: '', checkIn: '', checkOut: '', guests: 1,
+    firstName: '', lastName: '', phone: '', email: '',
+    specialRequests: '', paymentStatus: 'PENDING' as 'PENDING' | 'PAID',
+  });
+  const [newLoading, setNewLoading] = useState(false);
+  const [newError,   setNewError]   = useState('');
+
   // Loads the full reservations list from the server action.
   async function fetchReservations() {
     setLoading(true);
@@ -125,6 +137,44 @@ function ReservationsContent() {
       setEditError('Network error. Please try again.');
     } finally {
       setEditLoading(false);
+    }
+  }
+
+  // Resets the "New Reservation" form back to its defaults and opens the modal.
+  function openNewReservation() {
+    setNewForm({
+      source: 'PHONE', roomId: rooms[0]?.id || '', checkIn: '', checkOut: '', guests: 1,
+      firstName: '', lastName: '', phone: '', email: '', specialRequests: '', paymentStatus: 'PENDING',
+    });
+    setNewError('');
+    setShowNewModal(true);
+  }
+
+  // Submits a manually-logged reservation (phone/WhatsApp/walk-in) via
+  // POST, then refetches the list so it appears with server-calculated
+  // pricing/nights like every other reservation.
+  async function handleCreateReservation() {
+    const { roomId, checkIn, checkOut, guests, firstName, lastName, phone } = newForm;
+    if (!roomId || !checkIn || !checkOut || !firstName.trim() || !lastName.trim() || !phone.trim()) {
+      setNewError('Room, dates, guest count, name, and phone are all required.');
+      return;
+    }
+    setNewLoading(true);
+    setNewError('');
+    try {
+      const res = await fetch('/api/admin/reservations', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ...newForm, guests: Number(guests) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNewError(data.error || 'Failed to create reservation.'); return; }
+      setShowNewModal(false);
+      fetchReservations();
+    } catch {
+      setNewError('Network error. Please try again.');
+    } finally {
+      setNewLoading(false);
     }
   }
 
@@ -260,7 +310,7 @@ function ReservationsContent() {
               <option value="pending">Pending</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
+            <button onClick={openNewReservation} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2">
               <Plus size={20} /><span className="hidden sm:inline">New Reservation</span>
             </button>
           </div>
@@ -584,6 +634,179 @@ function ReservationsContent() {
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
               >
                 {editLoading && <Loader2 size={16} className="animate-spin" />} Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Reservation Modal — for logging a phone/WhatsApp/walk-in booking */}
+      {showNewModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900">
+              <h2 className="text-xl font-heading font-bold">New Reservation</h2>
+              <button onClick={() => setShowNewModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 -mt-1">
+                For reservations taken outside the website — over the phone, on WhatsApp, or from a guest booking in person.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">How was this booked? *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'PHONE',    label: 'Phone Call' },
+                    { value: 'WHATSAPP', label: 'WhatsApp' },
+                    { value: 'WALK_IN',  label: 'Walk-in' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setNewForm(f => ({ ...f, source: opt.value }))}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                        newForm.source === opt.value
+                          ? 'border-primary bg-primary-light text-primary'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-primary/40'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    value={newForm.firstName}
+                    onChange={(e) => setNewForm(f => ({ ...f, firstName: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    value={newForm.lastName}
+                    onChange={(e) => setNewForm(f => ({ ...f, lastName: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    value={newForm.phone}
+                    onChange={(e) => setNewForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (optional)</label>
+                  <input
+                    type="email"
+                    value={newForm.email}
+                    onChange={(e) => setNewForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room *</label>
+                <select
+                  value={newForm.roomId}
+                  onChange={(e) => setNewForm(f => ({ ...f, roomId: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="" disabled>Select a room</option>
+                  {rooms.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} — LKR {r.price.toLocaleString()}/night</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Check-in *</label>
+                  <input
+                    type="date"
+                    value={newForm.checkIn}
+                    onChange={(e) => setNewForm(f => ({ ...f, checkIn: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Check-out *</label>
+                  <input
+                    type="date"
+                    value={newForm.checkOut}
+                    onChange={(e) => setNewForm(f => ({ ...f, checkOut: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Guests</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newForm.guests}
+                    onChange={(e) => setNewForm(f => ({ ...f, guests: Number(e.target.value) }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment</label>
+                  <select
+                    value={newForm.paymentStatus}
+                    onChange={(e) => setNewForm(f => ({ ...f, paymentStatus: e.target.value as 'PENDING' | 'PAID' }))}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="PENDING">Not paid yet</option>
+                    <option value="PAID">Already paid</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Special Requests (optional)</label>
+                <textarea
+                  value={newForm.specialRequests}
+                  onChange={(e) => setNewForm(f => ({ ...f, specialRequests: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              {newError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{newError}</p>
+              )}
+            </div>
+            <div className="p-6 border-t flex justify-end gap-3">
+              <button
+                onClick={() => setShowNewModal(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateReservation}
+                disabled={newLoading}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {newLoading && <Loader2 size={16} className="animate-spin" />} Create Reservation
               </button>
             </div>
           </div>

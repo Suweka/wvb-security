@@ -132,6 +132,10 @@ model Booking {
   paymentMethod   String?
   specialRequests String?
   pointsEarned    Int            @default(0)
+  // Where this booking came from. Defaults to WEBSITE so the existing guest
+  // booking flow (app/api/bookings/route.ts) needs no changes — only manual
+  // admin-created bookings (phone/WhatsApp/walk-in) set this explicitly.
+  source          BookingSource  @default(WEBSITE)
   
   // Relations
   services            ServiceBooking[]
@@ -178,6 +182,17 @@ enum PaymentStatus {
   PENDING
   PAID
   FAILED
+}
+
+// How a booking reached us — almost all bookings are WEBSITE (the normal
+// guest booking flow); the other three are logged manually by an admin via
+// the "New Reservation" button on /admin/reservations, for guests who
+// called, messaged on WhatsApp, or booked in person at the front desk.
+enum BookingSource {
+  WEBSITE
+  PHONE
+  WHATSAPP
+  WALK_IN
 }
 
 enum Priority {
