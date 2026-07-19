@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  Tag,
 } from 'lucide-react';
 
 // Left-hand navigation sidebar shown on every page under /admin. Handles its
@@ -62,6 +63,7 @@ export const AdminSidebar = () => {
     { icon: DollarSign, label: 'Financials', href: '/admin/financials' },
     { icon: Star, label: 'Reviews', href: '/admin/reviews' },
     { icon: ConciergeBell, label: 'Concierge', href: '/admin/concierge' },
+    { icon: Tag, label: 'Coupons', href: '/admin/coupons' },
     { icon: Mail, label: 'Newsletter', href: '/admin/newsletter' },
     { icon: ShieldCheck, label: 'Audit Log', href: '/admin/audit-log' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Users, Send, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 
 // Shape of a newsletter subscriber row.
 interface Subscriber {
@@ -37,11 +38,17 @@ export default function AdminNewsletterPage() {
   // Only active (non-unsubscribed) subscribers actually receive newsletters.
   const activeCount = subscribers.filter(s => s.isActive).length;
 
+  // `message` is now an HTML string from the rich text editor, so a
+  // "meaningless" value like '<p></p>' or '<br>' would pass a plain
+  // .trim() check even though it looks empty to the admin. Stripping tags
+  // first gives an honest emptiness check for validation purposes.
+  const messageIsEmpty = message.replace(/<[^>]*>/g, '').trim().length === 0;
+
   // Handles the compose form submission: POSTs the subject/message to the
   // send endpoint, which emails every active subscriber.
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
+    if (!subject.trim() || messageIsEmpty) return;
     setSending(true);
     setResult(null);
     try {
@@ -108,19 +115,16 @@ export default function AdminNewsletterPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message *</label>
-              <textarea
+              <RichTextEditor
                 value={message}
-                onChange={e => setMessage(e.target.value)}
-                rows={8}
+                onChange={setMessage}
                 placeholder="Write your newsletter message here..."
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
-                required
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Each line becomes a paragraph in the email.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Select text, then use Bold / text color / highlight in the toolbar.</p>
             </div>
             <button
               type="submit"
-              disabled={sending || activeCount === 0}
+              disabled={sending || activeCount === 0 || messageIsEmpty || !subject.trim()}
               className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sending ? (

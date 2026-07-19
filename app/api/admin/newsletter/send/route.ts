@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
   try {
     const { subject, message } = await request.json();
 
-    // Both fields must have actual (non-whitespace) content.
-    if (!subject?.trim() || !message?.trim()) {
+    // `message` is HTML from the admin's rich text editor, so something
+    // like '<p></p>' would pass a plain .trim() check while still being
+    // empty to the eye — strip tags first for an honest emptiness check.
+    const messageText = (message || '').replace(/<[^>]*>/g, '').trim();
+    if (!subject?.trim() || !messageText) {
       return NextResponse.json({ error: 'Subject and message are required.' }, { status: 400 });
     }
 

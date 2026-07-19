@@ -187,21 +187,22 @@ export async function sendNewsletterWelcomeEmail({ to }: { to: string }) {
 }
 
 // Sends a one-off announcement/promo email (composed by an admin) to a
-// newsletter subscriber, wrapping their plain-text `message` in the branded template.
+// newsletter subscriber. `message` is HTML straight from the admin's rich
+// text editor (bold/color/highlight formatting) — it's embedded directly
+// rather than treated as plain text, since it's already markup.
 export async function sendNewsletterBroadcast({
   to, subject, message,
 }: { to: string; subject: string; message: string }) {
   await sendEmail({
     to,
     subject,
-    // Below: split the plain-text message on newlines and wrap each line in its own <p> tag.
     html: `
 <!DOCTYPE html>
 <html>
 <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
   ${BRAND_HEADER}
   <div style="background:#f9f9f9;padding:28px;border:1px solid #e0e0e0">
-    ${message.split('\n').map(line => `<p style="margin:0 0 12px;line-height:1.6;color:#444">${line}</p>`).join('')}
+    <div style="line-height:1.6;color:#444">${message}</div>
     <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
     <p style="font-size:12px;color:#aaa;text-align:center">
       You're receiving this because you subscribed to White Vintage Bungalow updates.
