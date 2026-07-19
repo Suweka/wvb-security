@@ -1,3 +1,12 @@
+// This is the public "About Us" page for the guest-facing site.
+// It's a Next.js Client Component (see 'use client' below) that renders static
+// marketing content: hero banner, stats, our story, values, team, and a call-to-action.
+// All the data on this page (stats, team members, etc.) is hard-coded in arrays below —
+// there is no API call or database fetch on this page.
+
+// 'use client' tells Next.js this component runs in the user's browser, not on the
+// server. It's required here because we use browser-only features like framer-motion
+// animations (motion.div) and React hooks used inside the Reveal/CountUp components.
 'use client';
 
 import React from 'react';
@@ -9,7 +18,9 @@ import { Reveal, Stagger } from '@/components/guest/Reveal';
 import { CountUp } from '@/components/guest/CountUp';
 import { Award, Users, Heart, Shield, Star, CheckCircle, Sparkles } from 'lucide-react';
 
+// The default export is what Next.js renders for the /about route.
 export default function AboutPage() {
+  // Hard-coded stats shown as animated counters (see CountUp) in the "Stats" section below.
   const stats = [
     { end: 10,  suffix: '+', decimals: 0, label: 'Years of Hospitality' },
     { end: 500, suffix: '+', decimals: 0, label: 'Happy Guests' },
@@ -17,6 +28,7 @@ export default function AboutPage() {
     { end: 4.9, suffix: '',  decimals: 1, label: 'Google Rating' },
   ];
 
+  // Core values displayed as cards in the "Our Values" section.
   const values = [
     {
       icon: Heart,
@@ -40,6 +52,7 @@ export default function AboutPage() {
     },
   ];
 
+  // Team member cards shown in the "Our Team" section.
   const team = [
     { name: 'Lalith Prasanna', position: 'Owner', image: '/images/team/1.jpeg' },
     { name: 'Maduri Hansika', position: 'Manager', image: '/images/team/2.jpeg' },
@@ -47,12 +60,14 @@ export default function AboutPage() {
     { name: 'Suweka Jayakody', position: 'IT Manager', image: '/images/team/4.jpeg' },
   ];
 
+  // "Guest Favourites" highlight cards.
   const highlights = [
     { title: 'Home-Style Dining', org: 'Fresh meals prepared by our in-house chef' },
     { title: 'Garden & Barbeque Evenings', org: 'Private garden with an outdoor BBQ grill' },
     { title: 'Tea-Country Views', org: 'Misty mountains and plantations at every turn' },
   ];
 
+  // Bullet-point reasons shown in the "Why Choose Us" section.
   const reasons = [
     'Charming vintage-style bungalow',
     'Prime location in Nuwara Eliya',

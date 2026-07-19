@@ -1,8 +1,13 @@
-﻿'use client';
+﻿// Admin page — Newsletter.
+// Two-panel page: a compose form to send a newsletter email to all active
+// subscribers (via /api/admin/newsletter/send), and a read-only list of
+// subscribers pulled from /api/admin/newsletter/subscribers.
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Users, Send, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 
+// Shape of a newsletter subscriber row.
 interface Subscriber {
   id: string;
   email: string;
@@ -10,14 +15,18 @@ interface Subscriber {
   createdAt: string;
 }
 
+// Main page component — rendered at /admin/newsletter.
 export default function AdminNewsletterPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  // Holds the outcome of the last send attempt (success or error message),
+  // shown as a colored banner above the compose form.
   const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Runs once on mount to load the subscriber list.
   useEffect(() => {
     fetch('/api/admin/newsletter/subscribers')
       .then(r => r.json())
@@ -25,8 +34,11 @@ export default function AdminNewsletterPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Only active (non-unsubscribed) subscribers actually receive newsletters.
   const activeCount = subscribers.filter(s => s.isActive).length;
 
+  // Handles the compose form submission: POSTs the subject/message to the
+  // send endpoint, which emails every active subscriber.
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) return;
@@ -129,7 +141,7 @@ export default function AdminNewsletterPage() {
               </div>
               <div>
                 <h2 className="font-bold text-lg">Subscribers</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{activeCount} active Â· {subscribers.length - activeCount} unsubscribed</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{activeCount} active · {subscribers.length - activeCount} unsubscribed</p>
               </div>
             </div>
           </div>
@@ -146,7 +158,7 @@ export default function AdminNewsletterPage() {
           ) : (
             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
               {subscribers.map(sub => (
-                <div key={sub.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors">
+                <div key={sub.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-white/60 dark:hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
                     <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{sub.email}</span>

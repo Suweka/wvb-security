@@ -1,4 +1,8 @@
-﻿'use client';
+﻿// Admin page — Concierge.
+// Lists guest concierge/service requests (e.g. restaurant reservations,
+// transportation), lets staff start/complete/cancel them, and provides a
+// modal to log a brand new request. Talks to /api/admin/concierge.
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -6,9 +10,11 @@ import {
   Zap, XCircle, Loader2, RefreshCw,
 } from 'lucide-react';
 
+// Lifecycle states a concierge request can be in.
 type ConciergeStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
 
+// Shape of a concierge request as returned by the API.
 interface ConciergeRequest {
   id: string;
   guestName: string;
@@ -23,6 +29,8 @@ interface ConciergeRequest {
   createdAt: string;
 }
 
+// Shape of the "New Request" modal form fields (all strings for controlled
+// inputs, converted/nulled when sent to the API).
 interface NewForm {
   guestName: string;
   roomNumber: string;
@@ -33,6 +41,7 @@ interface NewForm {
   contact: string;
 }
 
+// Default/blank values used to reset the new-request form after submit or cancel.
 const EMPTY_FORM: NewForm = {
   guestName: '',
   roomNumber: '',
@@ -43,12 +52,15 @@ const EMPTY_FORM: NewForm = {
   contact: '',
 };
 
+// Main page component — rendered at /admin/concierge.
 export default function ConciergePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<ConciergeStatus | 'all'>('all');
   const [requests, setRequests] = useState<ConciergeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  // Tracks which request+action combo is currently being submitted (e.g.
+  // "abc123start"), so we can show a spinner on just that one button.
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // New request modal
@@ -57,6 +69,7 @@ export default function ConciergePage() {
   const [newLoading, setNewLoading] = useState(false);
   const [newError, setNewError] = useState('');
 
+  // Loads all concierge requests from the API.
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -71,8 +84,12 @@ export default function ConciergePage() {
     setLoading(false);
   }, []);
 
+  // Runs once on mount to load the initial request list.
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
+  // Sends a status-change action (start/complete/cancel) for one request to
+  // the API, then merges the updated fields back into local state so the UI
+  // reflects the change without needing a full refetch.
   async function handleAction(id: string, action: 'start' | 'complete' | 'cancel') {
     setActionLoading(id + action);
     try {
@@ -93,9 +110,13 @@ export default function ConciergePage() {
     setActionLoading(null);
   }
 
+  // Handles submission of the "New Request" form. Validates required fields
+  // client-side first, then POSTs to the API to create the request.
   async function handleNewRequest(e: React.FormEvent) {
+    // Prevent the browser's default full-page form submit/reload.
     e.preventDefault();
     setNewError('');
+    // Simple required-field validation before hitting the network.
     if (!newForm.guestName || !newForm.service) {
       setNewError('Guest name and service are required.');
       return;
@@ -129,6 +150,8 @@ export default function ConciergePage() {
     setNewLoading(false);
   }
 
+  // Applies both the search box and status dropdown filters to the full
+  // request list to produce what's actually shown on screen.
   const filteredRequests = requests.filter((r) => {
     const matchesSearch =
       r.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,6 +161,7 @@ export default function ConciergePage() {
     return matchesSearch && matchesFilter;
   });
 
+  // Maps a status value to its badge color classes.
   const getStatusColor = (status: ConciergeStatus) => {
     switch (status) {
       case 'COMPLETED':  return 'bg-green-100 text-green-700';
@@ -148,6 +172,7 @@ export default function ConciergePage() {
     }
   };
 
+  // Converts the raw enum value (e.g. "IN_PROGRESS") into a human-friendly label.
   const getStatusLabel = (status: ConciergeStatus) => {
     switch (status) {
       case 'IN_PROGRESS': return 'In Progress';
@@ -155,6 +180,7 @@ export default function ConciergePage() {
     }
   };
 
+  // Picks which icon to show for a given priority level.
   const getPriorityIcon = (priority: Priority) => {
     if (priority === 'HIGH')   return <Zap size={18} className="text-red-600" />;
     if (priority === 'MEDIUM') return <AlertCircle size={18} className="text-yellow-600" />;

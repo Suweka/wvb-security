@@ -1,4 +1,11 @@
-﻿'use client';
+﻿// This is the public "Our Services" page. It's mostly static marketing content: a grid
+// of service cards, additional services, experience packages, and service hours — all
+// hard-coded in arrays below. No API calls or state changes happen on this page.
+
+// 'use client' is present here even though the page has no interactivity of its own;
+// it's likely inherited from copy-pasting another page, since nothing here strictly
+// requires the browser. It's harmless — it just means this renders as a Client Component.
+'use client';
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +26,8 @@ import {
 } from 'lucide-react';
 
 export default function ServicesPage() {
+  // Static list of services shown as detailed cards (icon, description, feature list,
+  // price) in the "Our Facilities & Services" section.
   const services = [
     {
       icon: ChefHat,
@@ -178,6 +187,7 @@ export default function ServicesPage() {
     },
   ];
 
+  // Short list of smaller extra services shown as a compact grid of checkmarked items.
   const additionalServices = [
     'Luggage storage',
     'Wake-up calls',

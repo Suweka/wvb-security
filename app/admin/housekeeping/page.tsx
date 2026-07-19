@@ -1,16 +1,23 @@
-﻿'use client';
+﻿// Admin page — Housekeeping.
+// Lists cleaning/maintenance tasks per room, lets staff mark tasks complete
+// or edit them, and provides a modal to create new tasks. Talks to
+// /api/admin/tasks and reuses room data from getRoomsData().
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Check, User, Calendar, Loader2, AlertCircle, RefreshCw, Edit, X } from 'lucide-react';
 import { getHousekeepingData, getRoomsData } from '@/lib/admin-actions';
 
+// Lifecycle states a housekeeping task can be in.
 type TaskStatus = 'pending' | 'in-progress' | 'completed';
 
+// Minimal room info used to populate the "Room" dropdown when creating a task.
 interface RoomOption {
   id: string;
   name: string;
 }
 
+// Shape of a housekeeping task as returned by the API.
 interface HousekeepingTask {
   id: string;
   roomName: string;
@@ -22,6 +29,7 @@ interface HousekeepingTask {
   dueAt: string | null;
 }
 
+// Shape of the "New Task" modal form fields.
 interface NewTaskForm {
   title: string;
   description: string;
@@ -30,18 +38,21 @@ interface NewTaskForm {
   roomId: string;
 }
 
+// Badge color per task status.
 const STATUS_COLORS: Record<TaskStatus, string> = {
   completed:    'bg-green-100 text-green-700',
   'in-progress':'bg-blue-100 text-blue-700',
   pending:      'bg-yellow-100 text-yellow-700',
 };
 
+// Text color per priority level.
 const PRIORITY_COLORS: Record<string, string> = {
   high:   'text-red-600',
   medium: 'text-yellow-600',
   low:    'text-green-600',
 };
 
+// Main page component — rendered at /admin/housekeeping.
 export default function HousekeepingPage() {
   const [tasks, setTasks]             = useState<HousekeepingTask[]>([]);
   const [rooms, setRooms]             = useState<RoomOption[]>([]);
@@ -50,6 +61,8 @@ export default function HousekeepingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
   const [actionMsg, setActionMsg]     = useState('');
+  // Tracks which single task is currently being marked complete, so only
+  // that task's button shows a spinner (rather than disabling everything).
   const [updatingId, setUpdatingId]   = useState<string | null>(null);
 
   // Edit modal
@@ -61,6 +74,7 @@ export default function HousekeepingPage() {
   const [newForm, setNewForm]         = useState<NewTaskForm>({ title: '', description: '', priority: 'MEDIUM', dueAt: '', roomId: '' });
   const [newLoading, setNewLoading]   = useState(false);
 
+  // Loads the housekeeping task list.
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -70,12 +84,17 @@ export default function HousekeepingPage() {
     setLoading(false);
   }, []);
 
+  // Runs once on mount to load tasks.
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  // Separate effect (runs once on mount) to load the list of rooms for the
+  // "New Task" room dropdown — kept independent of fetchTasks so a task
+  // refresh doesn't also needlessly re-fetch rooms.
   useEffect(() => {
     getRoomsData().then(data => { if (data) setRooms(data.map(r => ({ id: r.id, name: r.name }))); });
   }, []);
 
+  // Applies the search box and status filter to the full task list.
   const filtered = tasks.filter(t => {
     const q = searchQuery.toLowerCase();
     const matchSearch =
@@ -86,6 +105,9 @@ export default function HousekeepingPage() {
     return matchSearch && matchFilter;
   });
 
+  // Marks a task as completed via PATCH, then updates it in local state
+  // (converted to the lowercase 'completed' status used in the UI) rather
+  // than refetching everything.
   async function handleMarkComplete(id: string) {
     setUpdatingId(id);
     try {
@@ -104,6 +126,8 @@ export default function HousekeepingPage() {
     }
   }
 
+  // Saves edits made in the "Edit Task" modal via PATCH, then merges the
+  // updated task back into local state.
   async function handleEditSave() {
     if (!editTask) return;
     setEditLoading(true);
@@ -129,7 +153,10 @@ export default function HousekeepingPage() {
     }
   }
 
+  // Creates a brand new housekeeping task via POST, then refetches the full
+  // task list (unlike the other handlers, since a new task changes ordering).
   async function handleCreateTask() {
+    // Guard against submitting an empty/whitespace-only title.
     if (!newForm.title.trim()) return;
     setNewLoading(true);
     try {

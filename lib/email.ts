@@ -1,9 +1,14 @@
+// Transactional email sending, built on the Resend email API. Each exported
+// function builds a specific HTML email (booking pending, booking confirmed,
+// newsletter welcome, newsletter broadcast) and sends it via sendEmail().
 import { Resend } from 'resend';
 
-const resend  = new Resend(process.env.RESEND_API_KEY);
-const BASE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-const FROM     = 'White Vintage Bungalow <onboarding@resend.dev>';
+const resend  = new Resend(process.env.RESEND_API_KEY); // Resend client, authenticated with the API key from env vars
+const BASE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'; // used to build absolute links inside emails
+const FROM     = 'White Vintage Bungalow <onboarding@resend.dev>'; // sender name/address shown to recipients
 
+// Shared HTML snippets reused at the top/bottom of every email so all emails
+// look consistent (same branding/colors and contact footer).
 const BRAND_HEADER = `
   <div style="background:#208f6a;padding:24px;border-radius:8px 8px 0 0;text-align:center">
     <h1 style="color:#fff;margin:0;font-size:24px">White Vintage Bungalow</h1>
@@ -17,7 +22,11 @@ const BRAND_FOOTER = `
     | <a href="tel:+94777180599" style="color:#208f6a">+94 777 180 599</a>
   </p>`;
 
+// Internal helper that actually sends an email via Resend. All the exported
+// functions below build the HTML and then call this to dispatch it.
 async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  // If no API key is configured (e.g. local dev without email set up), skip
+  // sending and just log what would have been sent — avoids crashing the app.
   if (!process.env.RESEND_API_KEY) {
     console.log(`[EMAIL not sent — RESEND_API_KEY not set]\nTo: ${to}\nSubject: ${subject}`);
     return;
@@ -26,12 +35,17 @@ async function sendEmail({ to, subject, html }: { to: string; subject: string; h
   if (error) console.error('[EMAIL] Resend error:', error);
 }
 
+// Sent right after a guest books using bank transfer as the payment method:
+// explains the booking is pending, gives bank account details, and links to
+// the receipt upload page so the guest can confirm they've paid.
 export async function sendBankTransferPendingEmail({
   to, guestName, bookingNumber, rooms, checkIn, checkOut, totalAmount,
 }: {
   to: string; guestName: string; bookingNumber: string;
   rooms: string; checkIn: string; checkOut: string; totalAmount: number;
 }) {
+  // Link to the page where the guest can upload proof of their bank transfer,
+  // pre-filled with their booking reference via the `ref` query param.
   const uploadLink = `${BASE_URL}/booking/upload-receipt?ref=${bookingNumber}`;
 
   await sendEmail({
@@ -100,6 +114,8 @@ export async function sendBankTransferPendingEmail({
   });
 }
 
+// Sent once an admin verifies payment (e.g. confirms the bank transfer receipt),
+// letting the guest know their booking is officially confirmed.
 export async function sendBookingConfirmedEmail({
   to, guestName, bookingNumber, rooms, checkIn, checkOut,
 }: {
@@ -141,6 +157,8 @@ export async function sendBookingConfirmedEmail({
   });
 }
 
+// Sent when someone subscribes to the newsletter, welcoming them and briefly
+// describing what kind of emails they'll receive.
 export async function sendNewsletterWelcomeEmail({ to }: { to: string }) {
   await sendEmail({
     to,
@@ -168,12 +186,15 @@ export async function sendNewsletterWelcomeEmail({ to }: { to: string }) {
   });
 }
 
+// Sends a one-off announcement/promo email (composed by an admin) to a
+// newsletter subscriber, wrapping their plain-text `message` in the branded template.
 export async function sendNewsletterBroadcast({
   to, subject, message,
 }: { to: string; subject: string; message: string }) {
   await sendEmail({
     to,
     subject,
+    // Below: split the plain-text message on newlines and wrap each line in its own <p> tag.
     html: `
 <!DOCTYPE html>
 <html>

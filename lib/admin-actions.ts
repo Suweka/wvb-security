@@ -1,7 +1,14 @@
-'use server';
+// Server Actions used by the admin dashboard pages to fetch data straight from
+// the database (bookings, rooms, guests, tasks, reviews, financials). Each
+// function queries Prisma, reshapes the result into simple plain objects the
+// UI can render, and returns null (logging the error) if the query fails.
+'use server'; // Marks every export in this file as a Next.js Server Action — runs only on the server, callable directly from client components.
 
 import { prisma } from '@/lib/prisma';
 
+// Gathers the headline numbers shown on the admin dashboard: booking counts by
+// status, total paid revenue, room availability today, the 5 most recent
+// bookings, and the 5 highest-priority open tasks.
 export async function getDashboardStats() {
   try {
     // 1. Get total bookings and status counts
@@ -28,9 +35,9 @@ export async function getDashboardStats() {
     const totalRooms = await prisma.room.count();
     // For simplicity, let's assume rooms with active bookings today are "booked"
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // zero out the time so we compare whole calendar days, not exact timestamps
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setDate(tomorrow.getDate() + 1); // (tomorrow is computed but not currently used below)
 
     const activeBookingsCount = await prisma.booking.count({
       where: {
@@ -97,10 +104,12 @@ export async function getDashboardStats() {
   }
 }
 
+// Fetches every room along with its current status (available / booked /
+// under maintenance / being cleaned), used by the admin "Rooms" page.
 export async function getRoomsData() {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // start of today, for the "is this room booked right now" check below
 
     const rooms = await prisma.room.findMany({
       include: {
@@ -121,9 +130,10 @@ export async function getRoomsData() {
     });
 
     return rooms.map(r => {
-      const isBooked = r.bookings.length > 0;
+      const isBooked = r.bookings.length > 0; // bookings array was already filtered to "confirmed & covers today" in the query above
       const hasMaintenance = r.tasks.some(t => t.category === 'MAINTENANCE');
       const hasCleaning = r.tasks.some(t => t.category === 'HOUSEKEEPING');
+      // Priority order: booked > maintenance > cleaning > available.
       const status: 'available' | 'booked' | 'maintenance' | 'cleaning' =
         isBooked ? 'booked' : hasMaintenance ? 'maintenance' : hasCleaning ? 'cleaning' : 'available';
 
@@ -148,6 +158,8 @@ export async function getRoomsData() {
   }
 }
 
+// Fetches every booking (both from registered users and guest checkouts) for
+// the admin "Reservations" table, including any bank transfer receipt attached.
 export async function getReservationsData() {
   try {
     const bookings = await prisma.booking.findMany({
@@ -161,9 +173,14 @@ export async function getReservationsData() {
     });
 
     return bookings.map(b => {
+      // Difference between check-out and check-in in milliseconds, converted to
+      // whole days. Math.ceil rounds up so a partial-day difference still counts
+      // as a full night.
       const nights = Math.ceil(
         (b.checkOut.getTime() - b.checkIn.getTime()) / (1000 * 60 * 60 * 24)
       );
+      // A booking belongs either to a signed-in `user` or a one-off `guestCheckout`
+      // (no account) — fall back through both to find a display name/contact info.
       const guestName = b.user?.name
         || (b.guestCheckout ? `${b.guestCheckout.firstName} ${b.guestCheckout.lastName}` : 'Unknown');
       const email = b.user?.email || b.guestCheckout?.email || '';
@@ -201,6 +218,9 @@ export async function getReservationsData() {
   }
 }
 
+// Builds the admin "Guests" list by combining two different sources: registered
+// `User` accounts and one-off `GuestCheckout` records (people who booked without
+// creating an account), then sorting everyone together by join date.
 export async function getGuestsData() {
   try {
     const users = await prisma.user.findMany({
@@ -218,6 +238,7 @@ export async function getGuestsData() {
       orderBy: { createdAt: 'desc' },
     });
 
+    // reduce() adds up totalAmount across all of this user's bookings to get their lifetime spend.
     const fromUsers = users.map(u => {
       const totalSpent = u.bookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
       const lastBooking = u.bookings.sort(
@@ -265,6 +286,9 @@ export async function getGuestsData() {
   }
 }
 
+// Fetches all HOUSEKEEPING-category tasks for the admin housekeeping board,
+// reshaping Prisma's enum-style status/priority values into the lowercase
+// strings the UI expects.
 export async function getHousekeepingData() {
   try {
     const tasks = await prisma.task.findMany({
@@ -289,6 +313,8 @@ export async function getHousekeepingData() {
   }
 }
 
+// Fetches non-cancelled bookings (ordered by check-in date) for the admin
+// booking calendar view.
 export async function getCalendarData() {
   try {
     const bookings = await prisma.booking.findMany({
@@ -311,6 +337,8 @@ export async function getCalendarData() {
   }
 }
 
+// Fetches all guest reviews (with reviewer and room info) for the admin
+// "Reviews" page, newest first.
 export async function getReviewsData() {
   try {
     const reviews = await prisma.review.findMany({
@@ -331,6 +359,9 @@ export async function getReviewsData() {
   }
 }
 
+// Builds the numbers for the admin "Financials" page: total paid revenue,
+// a rough occupancy-rate estimate, and a revenue-by-month breakdown for the
+// last 6 months (for a chart).
 export async function getFinancialsData() {
   try {
     const totalRevenue = await prisma.payment.aggregate({
@@ -342,6 +373,9 @@ export async function getFinancialsData() {
     const confirmedBookings = await prisma.booking.count({ where: { status: 'CONFIRMED' } });
     const totalRooms = await prisma.room.count();
 
+    // Rough estimate: confirmed bookings divided by "room-nights available in a
+    // 30-day month" (totalRooms * 30). Not a precise occupancy calculation, but
+    // good enough for a dashboard summary figure.
     const occupancyRate = totalRooms > 0
       ? Math.round((confirmedBookings / (totalRooms * 30)) * 100)
       : 0;
@@ -349,9 +383,12 @@ export async function getFinancialsData() {
     // Revenue by month (last 6 months)
     const now = new Date();
     const monthlyRevenue: { month: string; revenue: number }[] = [];
+    // Loop from 5 months ago down to the current month (i=0), building one
+    // start/end date range per month and summing paid payments within it.
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      // Day 0 of next month = last day of this month (same trick as in DatePickerField).
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
       const result = await prisma.payment.aggregate({
         where: { status: 'PAID', createdAt: { gte: start, lte: end } },
@@ -368,7 +405,7 @@ export async function getFinancialsData() {
     return {
       totalRevenue: revenue,
       totalBookings,
-      occupancyRate: Math.min(occupancyRate, 100),
+      occupancyRate: Math.min(occupancyRate, 100), // clamp so a rough estimate can never display over 100%
       monthlyRevenue,
     };
   } catch (error) {

@@ -1,3 +1,7 @@
+// Floating "virtual concierge" chat bubble shown on every page (rendered
+// once, from app/layout.tsx). Clicking it opens a small chat panel that
+// sends the visitor's questions to /api/chatbot (an AI-backed endpoint) and
+// displays the replies.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -7,27 +11,66 @@ interface ChatMessage {
   content: string;
 }
 
+// The first message shown in every fresh chat session, before the user types anything.
 const GREETING: ChatMessage = {
   role: 'assistant',
   content: "Hi! I'm the White Vintage Bungalow virtual concierge. Ask me about rooms, pricing, amenities, or booking policies.",
 };
 
+// Matches any bare "http(s)://..." URL inside a message so it can be turned into a link.
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+// Renders plain-text message content, turning any bare URL into a clickable link.
+// URL_PATTERN has a capture group, so split() interleaves matches at odd indices —
+// avoids re-testing a stateful global regex (which would give wrong results on repeat calls).
+function renderMessageContent(content: string) {
+  const parts = content.split(URL_PATTERN);
+  return parts.map((part, i) =>
+    // Because URL_PATTERN has a capturing group, String.split() places the
+    // matched URLs at odd indices (1, 3, 5...) and the surrounding plain
+    // text at even indices (0, 2, 4...).
+    i % 2 === 1 ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline text-primary break-all"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function ChatWidget() {
+  // Whether the chat panel is expanded (true) or just the floating bubble (false).
   const [open, setOpen] = useState(false);
+  // Full conversation history shown in the panel, starting with the greeting.
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+  // Current text in the input box.
   const [input, setInput] = useState('');
+  // True while waiting for a reply from /api/chatbot (disables the input/shows a spinner dots).
   const [loading, setLoading] = useState(false);
+  // Error message to show below the messages, if the last request failed.
   const [error, setError] = useState<string | null>(null);
+  // Reference to the scrollable messages container, so we can auto-scroll it.
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Runs whenever the message list changes or the panel opens/closes:
+  // scrolls the message list to the bottom so the latest message is visible.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, open]);
 
+  // Sends the current input text to the chatbot API and appends the reply.
   async function sendMessage() {
     const text = input.trim();
     if (!text || loading) return;
 
+    // Optimistically add the user's message to the conversation immediately.
     const nextMessages = [...messages, { role: 'user', content: text } as ChatMessage];
     setMessages(nextMessages);
     setInput('');
@@ -35,6 +78,8 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
+      // Send the whole conversation so far — the API needs prior context to
+      // answer follow-up questions sensibly.
       const res = await fetch('/api/chatbot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,6 +97,7 @@ export default function ChatWidget() {
 
   return (
     <div className="chat-widget-entrance fixed bottom-24 right-6 z-50 flex flex-col items-end gap-3 opacity-0">
+      {/* The expanded chat panel — only rendered while `open` is true */}
       {open && (
         <div className="w-[min(22rem,calc(100vw-3rem))] h-[28rem] max-h-[70vh] flex flex-col rounded-2xl overflow-hidden glass-strong shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 bg-[#208f6a] text-white shrink-0">
@@ -67,6 +113,7 @@ export default function ChatWidget() {
             </button>
           </div>
 
+          {/* Scrollable message history */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-white/40 dark:bg-gray-900/30">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -77,10 +124,11 @@ export default function ChatWidget() {
                       : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm shadow-sm'
                   }`}
                 >
-                  {m.content}
+                  {renderMessageContent(m.content)}
                 </div>
               </div>
             ))}
+            {/* Animated "typing" dots shown while waiting for the API reply */}
             {loading && (
               <div className="flex justify-start">
                 <div className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white dark:bg-gray-800 shadow-sm flex gap-1 items-center">
@@ -93,6 +141,7 @@ export default function ChatWidget() {
             {error && <p className="text-xs text-red-600 dark:text-red-400 px-1">{error}</p>}
           </div>
 
+          {/* Message input form — submitting (Enter key or send button) calls sendMessage() */}
           <form
             onSubmit={e => {
               e.preventDefault();
@@ -141,6 +190,7 @@ export default function ChatWidget() {
           {/* Inner glow ring */}
           <span className="absolute inset-[-3px] rounded-full bg-[#208f6a] opacity-15 group-hover:opacity-30 transition-opacity duration-300" />
 
+          {/* Main toggle button — swaps between chat bubble icon and close (X) icon */}
           <button
             onClick={() => setOpen(v => !v)}
             aria-label={open ? 'Close chat' : 'Chat with our virtual concierge'}

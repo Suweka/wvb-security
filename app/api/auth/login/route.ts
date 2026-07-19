@@ -1,3 +1,9 @@
+// Handles admin/manager login (separate from the guest-facing NextAuth flow).
+// Exposes POST only: verifies email + password against a hardcoded admin list,
+// then issues a JWT and sets it as an httpOnly cookie so the admin dashboard can
+// authenticate future requests.
+// NextRequest/NextResponse are Next.js's typed wrappers around the standard Web
+// Request/Response objects, used in Route Handlers (API endpoints under app/api/).
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -22,10 +28,16 @@ const ADMIN_USERS = [
   },
 ];
 
+// process.env.* reads an environment variable (a secret/config value set outside the
+// code, e.g. in a .env file) — here it's the key used to sign/verify JWT tokens.
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+// POST /api/auth/login
+// Expects JSON body { email, password }. On success, returns the admin's info + a JWT
+// and sets an httpOnly "adminToken" cookie. On failure, returns 400/401 with a message.
 export async function POST(request: NextRequest) {
   try {
+    // Read and parse the JSON body sent by the client.
     const { email, password } = await request.json();
 
     // Validation
@@ -43,6 +55,8 @@ export async function POST(request: NextRequest) {
     const DUMMY_HASH = '$2b$12$t9TznmjR4IkIf3Ovp2X9c.CThzVG8eVSI5wL17I5fKKLALBKal4oC';
     const isValid = await bcrypt.compare(password, admin?.passwordHash ?? DUMMY_HASH);
 
+    // If no matching admin was found, or the password didn't match, reject the login
+    // and record the failed attempt in the audit log.
     if (!admin || !isValid) {
       await logAudit({
         actor: email,
@@ -56,6 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Login succeeded — record it in the audit log too.
     await logAudit({
       actor: admin.email,
       action: 'LOGIN_SUCCESS',
@@ -63,7 +78,9 @@ export async function POST(request: NextRequest) {
       metadata: { ip: getClientIp(request) },
     });
 
-    // Create JWT token
+    // Create a signed JWT (JSON Web Token) containing the admin's identity/role.
+    // This token proves who the user is on future requests without needing to
+    // look them up in a database every time — the server just verifies the signature.
     const token = jwt.sign(
       {
         id: admin.id,
@@ -102,6 +119,8 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
+    // Catch-all for unexpected errors (e.g. malformed JSON body, DB issues) so the
+    // route never crashes the server — it always responds with a JSON error instead.
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

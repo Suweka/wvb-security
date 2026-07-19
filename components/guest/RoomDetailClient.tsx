@@ -1,3 +1,8 @@
+// Renders a single room's full detail page: an image gallery/slider hero,
+// description, amenities, policies, reviews, and a sticky booking widget
+// that lets the visitor pick dates/guests and jump to the booking page.
+// One room ("family-room") gets a different gallery layout — see the
+// MasonryGallery component and the branch in RoomDetailClient below.
 'use client';
 
 import React, { useState } from 'react';
@@ -23,6 +28,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+// Shape of the room data this component needs — passed in as a prop from
+// the server-rendered room page after it fetches the room from the database.
 export interface RoomDetailData {
   slug: string;
   name: string;
@@ -35,6 +42,8 @@ export interface RoomDetailData {
   facilityGroups: { category: string; label: string; items: string[] }[];
 }
 
+// Maps each facility "category" string to the icon shown next to its
+// section heading in the Amenities list.
 const CATEGORY_ICON: Record<string, LucideIcon> = {
   room: Maximize,
   bathroom: Bath,
@@ -43,6 +52,8 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   general: Sparkles,
 };
 
+// Booking policies are the same for every room, so they're hard-coded here
+// rather than coming from the database.
 const SHARED_POLICIES = {
   checkIn: '2:00 PM',
   checkOut: '11:00 AM',
@@ -51,6 +62,8 @@ const SHARED_POLICIES = {
   pets: 'Pets not allowed',
 };
 
+// Placeholder reviews shown on every room's page (not room-specific, and not
+// loaded from a database — just static sample content).
 const SHARED_REVIEWS = [
   {
     name: 'Sarah Johnson',
@@ -72,40 +85,94 @@ const SHARED_REVIEWS = [
   },
 ];
 
-function GalleryImage({ src, name, className, onClick }: { src?: string; name: string; className?: string; onClick?: () => void }) {
-  if (src) {
-    return <img src={src} alt={name} className={className} onClick={onClick} />;
-  }
+// Alternative gallery layout used ONLY for the "family-room" (see the
+// `room.slug === 'family-room'` check in RoomDetailClient below). Instead of
+// the full-bleed sliding hero used by every other room, this room has many
+// more photos, so they're shown as a Pinterest-style masonry grid (CSS
+// multi-column layout — `columns-2 sm:columns-3 lg:columns-4`) that lets
+// photos of different heights sit compactly next to each other. Clicking any
+// photo opens the same lightbox used by the slider, via onOpenPhoto.
+function MasonryGallery({
+  images,
+  name,
+  onOpenPhoto,
+}: {
+  images: string[];
+  name: string;
+  onOpenPhoto: (index: number) => void;
+}) {
+  const hasImages = images.length > 0;
+
   return (
-    <div
-      className={`${className} bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center`}
-      onClick={onClick}
-    >
-      <span className="text-primary/40 text-6xl font-bold">{name.charAt(0)}</span>
-    </div>
+    <section className="relative bg-gray-50 dark:bg-gray-900/40 py-10 md:py-14">
+      <div className="container mx-auto px-4">
+        {hasImages ? (
+          // `columns-N` splits the container into N CSS columns and lets
+          // items flow top-to-bottom, left-to-right, filling gaps — this is
+          // what creates the masonry (Pinterest-like) effect, as opposed to
+          // a strict row-by-row grid.
+          <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 sm:gap-4">
+            {images.map((src, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onOpenPhoto(i)}
+                // break-inside-avoid stops a single photo from being split
+                // across two columns.
+                className="group relative block w-full mb-3 sm:mb-4 break-inside-avoid overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-shadow duration-300"
+              >
+                <img
+                  src={src}
+                  alt={`${name} photo ${i + 1}`}
+                  loading="lazy"
+                  className="w-full h-auto object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          // Fallback shown if this room somehow has no photos at all.
+          <div className="w-full aspect-video bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center rounded-xl">
+            <span className="text-primary/40 text-6xl font-bold">{name.charAt(0)}</span>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
 export function RoomDetailClient({ room }: { room: RoomDetailData }) {
   const router = useRouter();
 
+  // Which photo is currently shown in the slider/lightbox.
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Whether the full-screen photo lightbox is open.
   const [showLightbox, setShowLightbox] = useState(false);
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
+  // Defaults to 2 guests, but never more than the room actually allows.
   const [guests, setGuests] = useState(Math.min(2, room.maxGuests));
 
   const images = room.images;
   const hasImages = images.length > 0;
 
+  // Advances the slider/lightbox to the next photo, wrapping back to the
+  // first photo after the last one (modulo arithmetic).
   const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  // Moves to the previous photo, wrapping around to the last photo if
+  // currently on the first one.
   const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
 
+  // Average of the (static, shared) review ratings, shown next to the room title.
   const averageRating = SHARED_REVIEWS.reduce((acc, r) => acc + r.rating, 0) / SHARED_REVIEWS.length;
 
+  // Formats a Date as "YYYY-MM-DD" for the booking page's URL query string.
   const toISO = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+  // Navigates to /booking, pre-filling the room, guest count, and any
+  // check-in/check-out dates the visitor already picked in the sidebar widget.
   const handleBookNow = () => {
     const params = new URLSearchParams({ room: room.slug, guests: guests.toString() });
     if (checkIn)  params.set('checkIn',  toISO(checkIn));
@@ -116,51 +183,98 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
   return (
     <div className="min-h-screen bg-white animate-fadeIn">
       {/* Image Gallery */}
-      <section className="relative isolate overflow-hidden h-[320px] sm:h-[420px] md:h-[500px] bg-gray-100 dark:bg-gray-900 group">
+      {/* Room-specific layout branch: the "family-room" has a much larger
+          photo set curated for a masonry grid, so it gets MasonryGallery
+          instead of the standard full-bleed sliding hero every other room
+          uses. This is purely a display choice tied to that one room's
+          content — there's nothing else special about family-room's data. */}
+      {room.slug === 'family-room' ? (
+        <MasonryGallery
+          images={images}
+          name={room.name}
+          onOpenPhoto={(i) => {
+            setCurrentImageIndex(i);
+            setShowLightbox(true);
+          }}
+        />
+      ) : (
+      // Standard hero: a full-width, full-bleed image slider with arrows,
+      // dot indicators, and a "view all photos" button that opens the lightbox.
+      <section className="relative isolate overflow-hidden h-[65vh] min-h-[420px] max-h-[750px] bg-gray-900 group">
+        {/* Horizontal strip of all images, shifted left by (index * 100%) so
+            only the current one is visible — this is what makes it "slide". */}
         <div
           className="flex h-full transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
         >
           {(hasImages ? images : [undefined]).map((src, i) => (
-            <div key={i} className="w-full h-full flex-shrink-0 relative">
-              <GalleryImage
-                src={src}
-                name={room.name}
-                className="w-full h-full object-cover cursor-pointer"
-                onClick={() => hasImages && setShowLightbox(true)}
-              />
+            <div
+              key={i}
+              className="relative w-full h-full flex-shrink-0 cursor-pointer"
+              onClick={() => hasImages && setShowLightbox(true)}
+            >
+              {src ? (
+                <>
+                  {/* Blurred fill so the frame is never empty behind a non-cover aspect ratio */}
+                  <img
+                    src={src}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50"
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <img
+                    src={src}
+                    alt={room.name}
+                    className="relative w-full h-full object-contain"
+                  />
+                </>
+              ) : (
+                // Fallback shown if the room has no photos at all.
+                <div className="w-full h-full bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center">
+                  <span className="text-primary/40 text-6xl font-bold">{room.name.charAt(0)}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
-        {hasImages && (
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-        )}
+        {/* Bottom gradient + room name */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 p-6 md:p-8 flex items-end justify-between gap-4 pointer-events-none">
+          <p className="text-white text-3xl md:text-5xl font-heading font-bold drop-shadow-lg">{room.name}</p>
+          {hasImages && (
+            <span className="text-white/90 text-sm bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-lg flex-shrink-0">
+              {currentImageIndex + 1} / {images.length}
+            </span>
+          )}
+        </div>
 
+        {/* Prev/next arrows + dot indicators — only shown when there's more than one photo */}
         {hasImages && images.length > 1 && (
           <>
             <button
               onClick={prevImage}
               aria-label="Previous photo"
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             >
               <ChevronLeft size={22} />
             </button>
             <button
               onClick={nextImage}
               aria-label="Next photo"
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             >
               <ChevronRight size={22} />
             </button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-2">
               {images.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentImageIndex(i)}
                   aria-label={`Go to photo ${i + 1}`}
-                  className={`h-2.5 rounded-full transition-all ${
-                    i === currentImageIndex ? 'w-6 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/75'
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === currentImageIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'
                   }`}
                 />
               ))}
@@ -171,12 +285,13 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
         {hasImages && (
           <button
             onClick={() => setShowLightbox(true)}
-            className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-black/85 transition-colors"
+            className="absolute top-6 right-6 bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-lg text-sm hover:bg-white/20 transition-colors"
           >
-            {images.length > 1 ? `View All Photos (${images.length})` : 'View Photo'}
+            {images.length > 1 ? `View all ${images.length} photos` : 'View photo'}
           </button>
         )}
       </section>
+      )}
 
       {/* Content */}
       <section className="container mx-auto px-4 py-12">
@@ -211,7 +326,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
               </div>
             </div>
 
-            {/* Description */}
+            {/* Description — only rendered if the room actually has one */}
             {room.description && (
               <div className="mb-8">
                 <h2 className="text-2xl font-heading font-semibold mb-4">About This Room</h2>
@@ -219,12 +334,14 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
               </div>
             )}
 
-            {/* Amenities */}
+            {/* Amenities — grouped by category (room/bathroom/technology/food/general) */}
             {room.facilityGroups.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-2xl font-heading font-semibold mb-6">Room Amenities</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {room.facilityGroups.map(group => {
+                    // Pick the icon for this group's category, falling back
+                    // to a generic sparkle icon if the category is unrecognized.
                     const HeaderIcon = CATEGORY_ICON[group.category] || Sparkles;
                     return (
                       <div key={group.category}>
@@ -245,7 +362,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
               </div>
             )}
 
-            {/* Policies */}
+            {/* Policies — same for every room, from SHARED_POLICIES above */}
             <div className="mb-8 bg-gray-50 dark:bg-gray-900 p-6 rounded-lg">
               <h2 className="text-2xl font-heading font-semibold mb-4">Rules & Regulations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -277,7 +394,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
               </div>
             </div>
 
-            {/* Reviews */}
+            {/* Reviews — static sample reviews shared across all rooms */}
             <div className="mb-8">
               <h2 className="text-2xl font-heading font-semibold mb-6">Guest Reviews</h2>
               <div className="space-y-6">
@@ -294,6 +411,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">{review.date}</p>
                           </div>
                           <div className="flex gap-1">
+                            {/* Renders `review.rating` filled star icons */}
                             {[...Array(review.rating)].map((_, i) => (
                               <Star key={i} className="fill-accent text-accent" size={16} />
                             ))}
@@ -308,7 +426,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
             </div>
           </div>
 
-          {/* Booking Widget */}
+          {/* Booking Widget — sticky sidebar with date pickers, guest count, and Book Now */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 bg-primary-light p-6 rounded-lg shadow-lg">
               <div className="mb-6">
@@ -319,9 +437,14 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
               </div>
 
               <div className="space-y-4 mb-6">
+                {/* Immediately-invoked function so `today`/`checkOutMin` can
+                    be computed locally without cluttering the component body
+                    above — only needed right here for the date pickers. */}
                 {(() => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
+                  // Earliest selectable check-out date: the day after
+                  // check-in if chosen, otherwise the day after today.
                   const checkOutMin = checkIn
                     ? new Date(checkIn.getTime() + 86_400_000)
                     : new Date(today.getTime() + 86_400_000);
@@ -388,7 +511,9 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
         </div>
       </section>
 
-      {/* Lightbox */}
+      {/* Lightbox — full-screen photo viewer, shared by both the standard
+          slider hero and the family-room MasonryGallery (opened via
+          onOpenPhoto/setShowLightbox from either one) */}
       {showLightbox && hasImages && (
         <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
           <button onClick={() => setShowLightbox(false)} className="absolute top-4 right-4 text-white hover:text-gray-300">

@@ -1,9 +1,14 @@
-﻿'use client';
+﻿// Admin page — Financials.
+// Displays high-level revenue metrics (total revenue, bookings, occupancy),
+// a bar chart of the last 6 months of revenue, and a link to export a report.
+// Data comes from the getFinancialsData() server action.
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Download, TrendingUp, DollarSign, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { getFinancialsData } from '@/lib/admin-actions';
 
+// Shape of the financials payload returned by the server action.
 interface FinancialData {
   totalRevenue: number;
   totalBookings: number;
@@ -11,11 +16,13 @@ interface FinancialData {
   monthlyRevenue: { month: string; revenue: number }[];
 }
 
+// Main page component — rendered at /admin/financials.
 export default function FinancialsPage() {
   const [data, setData] = useState<FinancialData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Loads all financial figures in one call.
   async function fetchData() {
     setLoading(true);
     setError(false);
@@ -28,6 +35,7 @@ export default function FinancialsPage() {
     setLoading(false);
   }
 
+  // Runs once on mount to load the data.
   useEffect(() => { fetchData(); }, []);
 
   if (loading) {
@@ -48,8 +56,11 @@ export default function FinancialsPage() {
     );
   }
 
+  // Highest monthly revenue value, used to scale the bar chart heights below
+  // (the ", 1" fallback avoids dividing by zero if all months are 0).
   const maxRevenue = Math.max(...data.monthlyRevenue.map(d => d.revenue), 1);
 
+  // Configuration for the four stat cards at the top of the page.
   const financialStats = [
     {
       title: 'Total Revenue',
@@ -139,6 +150,8 @@ export default function FinancialsPage() {
                   <span className="text-xs text-primary font-medium mb-1">
                     {d.revenue > 0 ? `${(d.revenue / 1000).toFixed(0)}k` : ''}
                   </span>
+                  {/* Bar height is this month's revenue as a fraction of the
+                      highest month, scaled to a max of 180px. */}
                   <div
                     className="w-full bg-primary rounded-t transition-all"
                     style={{ height: `${(d.revenue / maxRevenue) * 180}px`, minHeight: d.revenue > 0 ? '4px' : '0' }}

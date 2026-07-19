@@ -1,3 +1,8 @@
+// Admin page — Login.
+// The sign-in form for the admin dashboard. Submits email/password to
+// /api/auth/login, which sets a secure httpOnly session cookie on success;
+// this page then caches the (non-sensitive) user profile locally and
+// redirects to /admin/dashboard.
 'use client';
 
 import React, { useState } from 'react';
@@ -7,15 +12,21 @@ import { Reveal } from '@/components/guest/Reveal';
 import { Magnetic } from '@/components/ui/Magnetic';
 import { setAdminUser } from '@/lib/auth';
 
+// Main page component — rendered at /admin/login.
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Toggles whether the password field shows plain text or dots.
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Handles the login form submission: POSTs credentials to the API and,
+  // on success, stores the returned user profile and navigates to the
+  // dashboard.
   const handleSubmit = async (e: React.FormEvent) => {
+    // Stop the browser from doing its default full-page form submission.
     e.preventDefault();
     setError('');
     setLoading(true);

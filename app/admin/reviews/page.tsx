@@ -1,4 +1,9 @@
-﻿'use client';
+﻿// Admin page — Reviews.
+// Two tabs: "Internal Reviews" (guest reviews submitted on this site, with
+// search/filter, a detail panel, and delete) and "Google Reviews" (an
+// embedded live widget pulling reviews from the property's Google Business
+// Profile). Internal review data comes from getReviewsData().
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Star, Trash2, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
@@ -7,6 +12,7 @@ import GoogleReviewsWidget from '@/components/GoogleReviewsWidget';
 
 type ReviewRating = 1 | 2 | 3 | 4 | 5;
 
+// Shape of an internal (site-submitted) review.
 interface Review {
   id: string;
   guestName: string;
@@ -16,6 +22,8 @@ interface Review {
   createdAt: string;
 }
 
+// Small reusable helper component: renders a row of 5 stars, filling in the
+// ones up to `rating` and leaving the rest gray/outlined.
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="flex gap-0.5">
@@ -26,6 +34,7 @@ function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
+// Main page component — rendered at /admin/reviews.
 export default function ReviewsPage() {
   const [activeTab, setActiveTab]       = useState<'internal' | 'google'>('internal');
   const [reviews, setReviews]           = useState<Review[]>([]);
@@ -33,10 +42,12 @@ export default function ReviewsPage() {
   const [error, setError]               = useState(false);
   const [searchQuery, setSearchQuery]   = useState('');
   const [filterRating, setFilterRating] = useState<'all' | ReviewRating>('all');
+  // The review currently open in the detail panel (null = none selected).
   const [selected, setSelected]         = useState<Review | null>(null);
   const [deleting, setDeleting]         = useState(false);
   const [actionMsg, setActionMsg]       = useState('');
 
+  // Loads all internal reviews from the server action.
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -46,8 +57,10 @@ export default function ReviewsPage() {
     setLoading(false);
   }, []);
 
+  // Runs once on mount to load reviews.
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
+  // Permanently deletes the selected review, after a confirm() prompt.
   async function handleDelete() {
     if (!selected) return;
     if (!confirm('Delete this review permanently?')) return;
@@ -65,6 +78,7 @@ export default function ReviewsPage() {
     }
   }
 
+  // Applies the search box and star-rating filter to the full review list.
   const filtered = reviews.filter(r => {
     const q = searchQuery.toLowerCase();
     const matchSearch =
@@ -75,10 +89,14 @@ export default function ReviewsPage() {
     return matchSearch && matchFilter;
   });
 
+  // Average star rating across all reviews, rounded to 1 decimal place
+  // (shown as an em-dash if there are no reviews yet, to avoid dividing by zero).
   const avgRating = reviews.length
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : '—';
 
+  // How many reviews exist at each star level (5 down to 1), used to draw
+  // the rating distribution bars.
   const dist = [5, 4, 3, 2, 1].map(n => ({
     n,
     count: reviews.filter(r => r.rating === n).length,

@@ -1,11 +1,20 @@
+// This route fetches a single guest's profile and booking history for the
+// admin guest-detail page. The guest may be either a registered user or a
+// one-off guest checkout — this route checks both. Only GET is exposed,
+// and only admins can call it.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 export const runtime = 'nodejs';
 
+// GET /api/admin/guests/[id]
+// Looks up the guest by id — first as a registered User, then as a
+// GuestCheckout — along with their booking history. Returns
+// { guest, bookings } or 404 if neither record exists.
 export async function GET(
   req: NextRequest,
+  // `params.id` comes from the "[id]" dynamic route segment in the URL.
   { params }: { params: { id: string } }
 ) {
   if (!requireAdmin(req)) {
@@ -14,7 +23,9 @@ export async function GET(
   try {
     const { id } = params;
 
-    // Try registered user first
+    // Try registered user first: look up a registered account with this
+    // id, plus all of their bookings (each including its room), newest
+    // booking first.
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
@@ -25,6 +36,7 @@ export async function GET(
       },
     });
 
+    // If we found a matching user, shape the response and return early.
     if (user) {
       const guest = {
         name: user.name ?? 'Unknown',
@@ -34,6 +46,8 @@ export async function GET(
         joinDate: user.createdAt.toISOString(),
         type: 'registered' as const,
       };
+      // Reshape each booking into a simpler object for the frontend,
+      // computing the nights stayed from the check-in/check-out dates.
       const bookings = user.bookings.map((b) => {
         const nights = Math.max(
           1,
@@ -56,7 +70,8 @@ export async function GET(
       return NextResponse.json({ guest, bookings });
     }
 
-    // Try guest checkout
+    // No registered user matched — try the GuestCheckout table instead
+    // (guests who booked without creating an account).
     const guestCheckout = await prisma.guestCheckout.findUnique({
       where: { id },
       include: {
@@ -67,6 +82,8 @@ export async function GET(
       },
     });
 
+    // If we found a matching guest checkout, shape the response the same
+    // way as above and return.
     if (guestCheckout) {
       const guest = {
         name: `${guestCheckout.firstName} ${guestCheckout.lastName}`,
@@ -98,6 +115,7 @@ export async function GET(
       return NextResponse.json({ guest, bookings });
     }
 
+    // Neither a User nor a GuestCheckout matched this id.
     return NextResponse.json({ error: 'Guest not found.' }, { status: 404 });
   } catch (error) {
     console.error('Guest detail error:', error);

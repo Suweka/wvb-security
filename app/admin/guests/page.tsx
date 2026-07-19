@@ -1,4 +1,9 @@
-﻿'use client';
+﻿// Admin page — Guests.
+// Lists all guests (both site-registered users and one-off guest-checkout
+// bookers), supports search/filter, a "view details" modal showing their
+// booking history, and an "add guest" modal for manually creating a guest
+// record. Wrapped in <Suspense> because it reads the ?q= URL search param.
+'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import {
@@ -8,6 +13,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { getGuestsData } from '@/lib/admin-actions';
 
+// Shape of a guest row in the list view.
 interface Guest {
   id: string;
   name: string;
@@ -21,6 +27,7 @@ interface Guest {
   type: 'registered' | 'guest';
 }
 
+// Shape of a single booking shown inside the guest detail modal.
 interface BookingDetail {
   bookingNumber: string;
   room: string;
@@ -32,6 +39,9 @@ interface BookingDetail {
   paymentMethod: string;
 }
 
+// Shape of the guest's own info shown at the top of the detail modal
+// (separate from the summary Guest interface because it comes from a
+// different API endpoint with slightly different fields).
 interface GuestDetail {
   name: string;
   email: string;
@@ -41,6 +51,7 @@ interface GuestDetail {
   joinDate: string;
 }
 
+// Shape of the "Add Guest" modal form fields.
 interface AddForm {
   firstName: string;
   lastName: string;
@@ -49,7 +60,12 @@ interface AddForm {
   country: string;
 }
 
+// Actual page content. Split out from the default export below so it can be
+// wrapped in <Suspense>: useSearchParams() requires a Suspense boundary in
+// Next.js's App Router.
 function GuestsContent() {
+  // Hook that reads the current URL's query string (e.g. ?q=jane) — used
+  // here to pre-fill the search box if the admin arrived via a search link.
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [filterType, setFilterType] = useState<'all' | 'registered' | 'guest'>('all');
@@ -69,6 +85,7 @@ function GuestsContent() {
   const [addError, setAddError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Loads the guest list (summary view) from the server action.
   async function fetchGuests() {
     setLoading(true);
     setError(false);
@@ -81,8 +98,12 @@ function GuestsContent() {
     setLoading(false);
   }
 
+  // Runs once on mount to load guests.
   useEffect(() => { fetchGuests(); }, []);
 
+  // Opens the detail modal for a guest and fetches their full profile +
+  // booking history from the API (not included in the summary list to keep
+  // the initial page load light).
   async function openDetail(guest: Guest) {
     setSelectedGuest(guest);
     setDetailData(null);
@@ -99,11 +120,14 @@ function GuestsContent() {
     setDetailLoading(false);
   }
 
+  // Closes the detail modal and clears its data.
   function closeDetail() {
     setSelectedGuest(null);
     setDetailData(null);
   }
 
+  // Handles submitting the "Add Guest" form: validates required fields, then
+  // POSTs the new guest to the API.
   async function handleAddGuest(e: React.FormEvent) {
     e.preventDefault();
     setAddError('');
@@ -125,6 +149,7 @@ function GuestsContent() {
         setShowAddModal(false);
         setAddForm({ firstName: '', lastName: '', email: '', phone: '', country: '' });
         setSuccessMsg('Guest added successfully.');
+        // Auto-dismiss the success banner after 4 seconds.
         setTimeout(() => setSuccessMsg(''), 4000);
         fetchGuests();
       }
@@ -134,6 +159,7 @@ function GuestsContent() {
     setAddLoading(false);
   }
 
+  // Applies the search box and registered/guest filter to the full list.
   const filteredGuests = guests.filter((guest) => {
     const matchesSearch =
       guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,6 +186,7 @@ function GuestsContent() {
     );
   }
 
+  // Sum of every guest's totalSpent, shown in the summary stats at the bottom.
   const totalRevenue = guests.reduce((sum, g) => sum + g.totalSpent, 0);
 
   return (
@@ -560,6 +587,8 @@ function GuestsContent() {
   );
 }
 
+// The actual default export for this route. Suspense shows a spinner
+// fallback while GuestsContent (which depends on useSearchParams) resolves.
 export default function GuestsPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin text-primary" size={48} /></div>}>

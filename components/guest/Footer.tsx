@@ -4,11 +4,19 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Youtube, MapPin, Phone, Mail, Loader2 } from 'lucide-react';
 
+// Site-wide footer: Instagram photo strip, about/contact/links columns, a
+// newsletter signup form, and the bottom copyright bar. Rendered on every
+// guest-facing page.
 export const Footer = () => {
+  // Newsletter email input value.
   const [email, setEmail] = useState('');
+  // Tracks the newsletter form's request lifecycle so the UI can show a
+  // spinner, a success message, or an error message as appropriate.
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
+  // Submits the newsletter form: posts the email to the subscribe API and
+  // updates `status`/`message` based on the result.
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -38,7 +46,7 @@ export const Footer = () => {
 
   return (
     <footer className="bg-gray-900 text-white">
-      {/* Instagram Gallery Section */}
+      {/* Instagram Gallery Section — a static strip of decorative photo links */}
       <div className="bg-gray-800 py-8">
         <div className="container mx-auto px-4">
           <div className="text-center mb-6">
@@ -54,8 +62,8 @@ export const Footer = () => {
               "/images/instagram/insta5.jpeg",
               "/images/instagram/insta6.jpeg",
             ].map((src, index) => (
-      <a 
-          key={index} 
+      <a
+          key={index}
           href="https://www.instagram.com/"
           target="_blank"
           className="aspect-square rounded-lg overflow-hidden cursor-pointer group"
@@ -144,14 +152,16 @@ export const Footer = () => {
                   disabled={status === 'loading'}
                   className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={status === 'loading'}
                   className="bg-accent text-gray-900 dark:text-gray-100 px-4 py-2 rounded-md hover:bg-accent-light transition-colors font-medium disabled:opacity-50"
                 >
+                  {/* Spinner while the request is in flight, arrow otherwise */}
                   {status === 'loading' ? <Loader2 className="animate-spin" size={20} /> : '→'}
                 </button>
               </div>
+              {/* Success/error feedback message from the last subscribe attempt */}
               {message && (
                 <p className={`text-xs ${status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                   {message}

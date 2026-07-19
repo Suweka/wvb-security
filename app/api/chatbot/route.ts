@@ -1,8 +1,16 @@
+// Powers the site's AI chat widget. Exposes POST only: takes the conversation so
+// far, builds a system prompt describing the property (facts + live room/pricing
+// data pulled from the database), sends it to Google's Gemini API, and returns the
+// assistant's reply.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Forces this route to run in the Node.js runtime (rather than the lighter-weight
+// Edge runtime) — needed here because Prisma (our database client) requires Node.
 export const runtime = 'nodejs';
 
+// Environment variable holding the Gemini API key (kept secret, set in .env — never
+// committed to source control). GEMINI_URL is the endpoint we POST prompts to.
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -13,12 +21,19 @@ interface ChatMessage {
   content: string;
 }
 
+// Builds the "system prompt" — instructions given to the AI before the user's
+// actual messages, describing who it is, what it knows, and how it should behave.
+// Room names/prices are fetched fresh from the database each time so the chatbot
+// never quotes stale pricing.
 async function buildSystemPrompt(): Promise<string> {
+  // Fetch all rooms (name, description, price, capacity, beds), cheapest first,
+  // to include live pricing info in the prompt.
   const rooms = await prisma.room.findMany({
     select: { name: true, description: true, price: true, maxGuests: true, beds: true },
     orderBy: { price: 'asc' },
   });
 
+  // Format each room into a single readable bullet-point line for the prompt text.
   const roomLines = rooms
     .map(r => `- ${r.name}: LKR ${Number(r.price).toLocaleString()}/night, sleeps up to ${r.maxGuests} guest(s)${r.beds ? `, ${r.beds}` : ''}${r.description ? ` — ${r.description}` : ''}`)
     .join('\n');
@@ -26,7 +41,7 @@ async function buildSystemPrompt(): Promise<string> {
   return `You are the friendly virtual concierge for White Vintage Bungalow, a boutique family-run guest bungalow in Nuwara Eliya, Sri Lanka's hill country.
 
 FACTS ABOUT THE PROPERTY (use these, don't invent details):
-- Location: Nuwara Eliya, Sri Lanka's tea-country hill region.
+- Location: Nuwara Eliya, Sri Lanka's tea-country hill region. Full address: 78/5 Bakers Park, 18 Dawson Hills, Nuwara Eliya. Google Maps link (share this whenever a guest asks where the property is or how to find it): https://www.google.com/maps/search/78%2F5+Bakers+Park,+Dawson+Hills,+Nuwara+Eliya/@6.942114,80.793866,15z
 - Character: vintage white facades, cosy interiors, lush private garden, family-run, 10+ years of hospitality, 500+ happy guests, 4.9 Google rating.
 - Amenities: in-house chef with home-style meals (breakfast included), free WiFi, garden space, 24-hour hot water, living/dining rooms, BBQ grill, Bluetooth mic & speakers, mountain/tea-plantation views, TV in every room, airport transfers & tour arrangements (from LKR 8,000), laundry service (from LKR 500), 24/7 concierge assistance.
 - Check-in: 2:00 PM. Check-out: 11:00 AM. Early check-in / late check-out available on request, subject to availability, with extra charges (late check-out after 3:00 PM incurs a half-day charge).
@@ -62,8 +77,13 @@ HOW TO BEHAVE:
 - Keep replies in plain text, no markdown headers or code blocks.`;
 }
 
+// POST /api/chatbot
+// Expects JSON body { messages: { role: 'user' | 'assistant', content: string }[] }
+// — the chat history so far. Sends the most recent messages plus a system prompt to
+// Gemini, and returns { reply: string } with the AI's response text.
 export async function POST(request: NextRequest) {
   try {
+    // If no API key is configured, fail gracefully instead of calling Gemini.
     if (!GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Chatbot is not configured yet. Add GEMINI_API_KEY to .env to enable it.' },
@@ -76,14 +96,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'messages array is required' }, { status: 400 });
     }
 
+    // Only send the last MAX_HISTORY messages — keeps the request small/cheap while
+    // still giving the AI enough recent context to hold a coherent conversation.
     const recent = messages.slice(-MAX_HISTORY);
     const systemPrompt = await buildSystemPrompt();
 
+    // Call the Gemini API. This is a server-to-server fetch to an external service —
+    // it happens here (not in the browser) so the API key stays secret.
     const geminiRes = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
+        // Gemini calls the assistant's role "model" instead of "assistant" — translate here.
         contents: recent.map(m => ({
           role: m.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: m.content }],
@@ -92,12 +117,16 @@ export async function POST(request: NextRequest) {
       }),
     });
 
+    // If Gemini itself returned an error status, log it and tell the user the
+    // chatbot is temporarily down rather than exposing the raw error.
     if (!geminiRes.ok) {
       const errBody = await geminiRes.text();
       console.error('[POST /api/chatbot] Gemini error', geminiRes.status, errBody);
       return NextResponse.json({ error: 'The chatbot is temporarily unavailable. Please try again shortly.' }, { status: 502 });
     }
 
+    // Pull the generated text out of Gemini's response shape, with a fallback
+    // message in case the response is empty/unexpected.
     const data = await geminiRes.json();
     const reply: string =
       data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ??

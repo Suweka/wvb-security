@@ -1,14 +1,25 @@
-﻿'use client';
+﻿// This is the page shown after a guest successfully pays for their booking via PayHere.
+// It confirms the payment, shows the booking reference, and invites the guest to leave
+// a Google review. Purely informational — no API calls are made here.
+
+// 'use client' — needed because this component reads the URL query string with
+// useSearchParams(), which is a browser-only hook.
+'use client';
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Phone, Star } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
+// Direct link to leave a Google review for this business (identified by its Google Place ID).
 const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=ChIJbbCxySeB4zoRFdNz-tS865g';
 
+// Inner component split out so it can be wrapped in <Suspense> below — required because
+// useSearchParams() needs a Suspense boundary in the Next.js App Router.
 function SuccessContent() {
+  // Read the current URL's query string (e.g. ?ref=WVB-2026-XXXXXX).
   const searchParams = useSearchParams();
+  // Booking reference to display to the guest as proof of their confirmed booking.
   const ref = searchParams.get('ref') || '—';
 
   return (
@@ -65,6 +76,8 @@ function SuccessContent() {
             </svg>
             <span className="flex items-center gap-1">
               Review us on Google
+              {/* [...Array(5)] creates a throwaway array of 5 empty slots just so we can
+                  .map() over it and render 5 star icons in a row */}
               {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />)}
             </span>
           </a>
@@ -74,6 +87,8 @@ function SuccessContent() {
   );
 }
 
+// The route's actual page component. Wraps SuccessContent in <Suspense> with a spinner
+// fallback since useSearchParams() requires a Suspense boundary.
 export default function BookingSuccessPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>

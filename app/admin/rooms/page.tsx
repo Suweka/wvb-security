@@ -1,3 +1,9 @@
+// Admin page — Rooms.
+// The most feature-heavy admin page: lists all hotel rooms with photos and
+// status, and lets staff edit a room's details, upload/reorder/delete photos
+// (via Cloudinary), toggle which facilities a room has (and create new
+// facility types on the fly), add a brand new room, and put a room into or
+// out of maintenance mode (which hides it from the public booking site).
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -8,14 +14,19 @@ import {
 import { getRoomsData } from '@/lib/admin-actions';
 import { getFacilityIcon, FACILITY_ICON_NAMES, FACILITY_CATEGORIES } from '@/lib/facility-icons';
 
+// Booking/operational state of a room.
 type RoomStatus = 'available' | 'booked' | 'maintenance' | 'cleaning';
 
+// One photo attached to a room. `order` controls display order — the image
+// with order 0 (or first in the array) is used as the cover photo.
 interface RoomImageItem {
   id: string;
   url: string;
   order: number;
 }
 
+// One selectable amenity/facility (e.g. "Free WiFi", "Private Pool") that a
+// room can be tagged with.
 interface FacilityItem {
   id: string;
   label: string;
@@ -23,6 +34,7 @@ interface FacilityItem {
   category: string;
 }
 
+// Shape of a room as returned by the API.
 interface Room {
   id: string;
   slug: string | null;
@@ -38,12 +50,17 @@ interface Room {
   facilities: FacilityItem[];
 }
 
+// Shape of the "Add Room" modal form — deliberately minimal (just the
+// basics); photos/facilities/capacity are added afterward via the edit modal.
 interface AddForm {
   name: string;
   description: string;
   price: string;
 }
 
+// Shape of the "Edit Room" modal form. Numeric fields are kept as strings
+// while editing (so the input can be temporarily empty/invalid) and parsed
+// to numbers only when saving.
 interface EditForm {
   name: string;
   description: string;
@@ -56,6 +73,7 @@ interface EditForm {
 
 const EMPTY_ADD_FORM: AddForm = { name: '', description: '', price: '' };
 
+// Badge color per room status.
 const STATUS_COLORS: Record<RoomStatus, string> = {
   available:   'bg-green-100 text-green-700',
   booked:      'bg-blue-100 text-blue-700',
@@ -63,6 +81,8 @@ const STATUS_COLORS: Record<RoomStatus, string> = {
   maintenance: 'bg-red-100 text-red-700',
 };
 
+// Human-friendly display names for facility categories (the raw category
+// values like "room"/"bathroom" come from the database).
 const CATEGORY_LABELS: Record<string, string> = {
   room: 'Room Features',
   bathroom: 'Bathroom',
@@ -71,6 +91,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   general: 'General',
 };
 
+// Uploads a room photo directly from the browser to Cloudinary (an
+// image-hosting service), using a signed upload: our server first hands out
+// a short-lived signature (so random people can't upload directly using our
+// account), then the browser uploads the file straight to Cloudinary's API.
+// Returns the final hosted image URL and its Cloudinary ID.
 async function uploadRoomImageToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
   const sigRes = await fetch('/api/upload/signature?folder=room-images');
   if (!sigRes.ok) throw new Error('Could not get upload signature');
@@ -92,6 +117,7 @@ async function uploadRoomImageToCloudinary(file: File): Promise<{ url: string; p
   return { url: data.secure_url as string, publicId: data.public_id as string };
 }
 
+// Main page component — rendered at /admin/rooms.
 export default function RoomsPage() {
   const [rooms, setRooms]               = useState<Room[]>([]);
   const [facilities, setFacilities]     = useState<FacilityItem[]>([]);
@@ -108,6 +134,8 @@ export default function RoomsPage() {
   });
   const [editLoading, setEditLoading]   = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  // Ref to the hidden <input type="file"> so we can trigger the native file
+  // picker programmatically when the "Add photo" button is clicked.
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Add modal
@@ -119,8 +147,12 @@ export default function RoomsPage() {
   const [newFacility, setNewFacility]   = useState({ label: '', icon: 'Check', category: 'general' });
   const [addingFacility, setAddingFacility] = useState(false);
 
+  // Tracks which single room's maintenance toggle is currently in flight.
   const [maintenanceLoadingId, setMaintenanceLoadingId] = useState<string | null>(null);
 
+  // Loads the full room list. Returns the fetched data (not just void) so
+  // callers like refreshEditRoom() can immediately look up a specific room
+  // from the fresh results without a second round of state reads.
   const fetchRooms = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -131,6 +163,8 @@ export default function RoomsPage() {
     return data;
   }, []);
 
+  // Loads the master list of facility types (used to build the checkbox
+  // list in the edit modal, independent of which facilities each room has).
   const fetchFacilities = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/facilities');
@@ -140,8 +174,10 @@ export default function RoomsPage() {
     }
   }, []);
 
+  // Runs once on mount to load both rooms and the facility list in parallel.
   useEffect(() => { fetchRooms(); fetchFacilities(); }, [fetchRooms, fetchFacilities]);
 
+  // Applies the search box and status filter to the full room list.
   const filtered = rooms.filter(r => {
     const q = searchQuery.toLowerCase();
     const matchSearch =
@@ -151,6 +187,8 @@ export default function RoomsPage() {
     return matchSearch && matchFilter;
   });
 
+  // Opens the "Edit Room" modal for a given room, pre-filling the form with
+  // its current values (numbers converted to strings for the text inputs).
   function openEdit(room: Room) {
     setEditRoom(room);
     setEditForm({
@@ -165,6 +203,9 @@ export default function RoomsPage() {
     setActionMsg('');
   }
 
+  // Re-fetches the room list and updates `editRoom` with the fresh copy of
+  // the room currently being edited. Used after image/facility changes so
+  // the modal reflects the latest photos/facilities without closing it.
   async function refreshEditRoom(roomId: string) {
     const fresh = await fetchRooms();
     const match = fresh?.find(r => r.id === roomId);
@@ -172,6 +213,8 @@ export default function RoomsPage() {
     return match;
   }
 
+  // Saves the edit form's changes (name, description, price, capacity,
+  // size, beds, facilities) via PATCH.
   async function handleEditSave() {
     if (!editRoom || !editForm.name || !editForm.price) return;
     setEditLoading(true);
@@ -200,6 +243,9 @@ export default function RoomsPage() {
     }
   }
 
+  // Creates a new room with just the basics (name/description/price), then
+  // immediately opens the edit modal on it so the admin can add photos and
+  // facilities right away.
   async function handleAddRoom() {
     if (!addForm.name || !addForm.price) return;
     setAddLoading(true);
@@ -228,6 +274,8 @@ export default function RoomsPage() {
     }
   }
 
+  // Puts a room into maintenance mode — this hides it from the public
+  // booking site (guests can't book it) until maintenance is resolved.
   async function handleStartMaintenance(roomId: string) {
     setMaintenanceLoadingId(roomId);
     try {
@@ -242,6 +290,7 @@ export default function RoomsPage() {
     }
   }
 
+  // Takes a room out of maintenance mode, making it bookable again.
   async function handleResolveMaintenance(roomId: string) {
     setMaintenanceLoadingId(roomId);
     try {
@@ -256,8 +305,13 @@ export default function RoomsPage() {
     }
   }
 
+  // Fires when the admin picks a file from the hidden file input. Uploads it
+  // to Cloudinary, then tells our API to attach the resulting URL to the
+  // room being edited, then refreshes the edit modal to show the new photo.
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    // Reset the input value so selecting the same file again still fires
+    // this handler (browsers otherwise treat it as "no change").
     e.target.value = '';
     if (!file || !editRoom) return;
 
@@ -278,6 +332,7 @@ export default function RoomsPage() {
     }
   }
 
+  // Deletes one photo from the room currently being edited.
   async function handleDeleteImage(imageId: string) {
     if (!editRoom) return;
     try {
@@ -289,6 +344,7 @@ export default function RoomsPage() {
     }
   }
 
+  // Marks a non-cover photo as the new cover (first) photo for the room.
   async function handleSetCover(imageId: string) {
     if (!editRoom) return;
     try {
@@ -300,6 +356,8 @@ export default function RoomsPage() {
     }
   }
 
+  // Toggles one facility checkbox on/off in the edit form: adds the id if
+  // it's not already selected, removes it if it is.
   function toggleFacility(id: string) {
     setEditForm(f => ({
       ...f,
@@ -309,6 +367,9 @@ export default function RoomsPage() {
     }));
   }
 
+  // Creates a brand new facility type (e.g. "Private Pool") from the small
+  // form inside the edit modal, adds it to the master facilities list, and
+  // automatically checks it for the room currently being edited.
   async function handleAddFacility() {
     if (!newFacility.label.trim()) return;
     setAddingFacility(true);
@@ -344,6 +405,10 @@ export default function RoomsPage() {
     </div>
   );
 
+  // Groups the flat facilities list into { category, items } buckets (in the
+  // fixed FACILITY_CATEGORIES order) so the edit modal can render them under
+  // labeled section headings instead of one long unsorted checkbox list.
+  // Empty categories (no facilities yet) are dropped from the result.
   const facilitiesByCategory = FACILITY_CATEGORIES.map(category => ({
     category,
     items: facilities.filter(f => f.category === category),
@@ -413,6 +478,8 @@ export default function RoomsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(room => {
+            // First image in the array is treated as the cover photo (see
+            // handleSetCover, which re-orders images to make a chosen one first).
             const cover = room.images[0];
             return (
               <div key={room.id} className="glass-card hover-lift rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">

@@ -1,10 +1,33 @@
-﻿'use client';
+﻿// This page lets a guest who paid by bank transfer submit proof of payment
+// (transaction reference, date, amount, and an optional receipt photo). It uploads
+// the image straight to Cloudinary from the browser, then POSTs the form data to
+// our own API (/api/bookings/upload-receipt) so an admin can verify and confirm the booking.
+
+// 'use client' — needed because this page has form state, file drag-and-drop, and
+// reads the URL query string, all of which require running in the browser.
+'use client';
 
 import React, { useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, AlertCircle, Upload, Loader2, ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 
+// Formats a JS Date as "YYYY-MM-DD" (ISO date, no time) for storing/sending to the API.
+const toISODate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Turns a "YYYY-MM-DD" string back into a JS Date object (the inverse of toISODate),
+// used to feed the current value into the DatePickerField component.
+function parseISODate(s: string): Date | null {
+  if (!s) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Uploads the selected receipt image directly to Cloudinary (an image hosting service)
+// from the browser, in two steps, so large images don't have to pass through our own
+// server (which would hit Vercel's request body size limit).
 async function uploadToCloudinary(file: File): Promise<string> {
   // Step 1 — get a signed upload signature from our server
   const sigRes = await fetch('/api/upload/signature');
@@ -28,16 +51,24 @@ async function uploadToCloudinary(file: File): Promise<string> {
   return data.secure_url as string;
 }
 
+// Inner component with all the form logic. Split out from the default-exported page
+// so it can be wrapped in <Suspense> below (useSearchParams needs that boundary).
 function UploadReceiptContent() {
   const searchParams  = useSearchParams();
+  // If the guest arrived via a link like /booking/upload-receipt?ref=WVB-..., pre-fill the field.
   const refFromUrl    = searchParams.get('ref') || '';
 
+  // React state hooks — each call creates a piece of state that, when updated via its
+  // setter function, causes this component to re-render with the new value.
+  // These five hold the values of the form's text/date/number inputs.
   const [bookingRef,     setBookingRef]     = useState(refFromUrl);
   const [transactionRef, setTransactionRef] = useState('');
   const [transferDate,   setTransferDate]   = useState('');
   const [amountPaid,     setAmountPaid]     = useState('');
   const [notes,          setNotes]          = useState('');
 
+  // State for the optional receipt image: the selected File object, a local preview URL,
+  // and various loading/status flags used to drive the UI (spinners, error messages, etc).
   const [receiptFile,    setReceiptFile]    = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploading,      setUploading]      = useState(false);
@@ -45,8 +76,13 @@ function UploadReceiptContent() {
   const [success,        setSuccess]        = useState(false);
   const [error,          setError]          = useState('');
 
+  // A ref to the hidden <input type="file"> element so we can programmatically
+  // trigger its click (open the file picker) and reset its value when clearing.
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Runs when the guest picks a file via the file input (or drag-and-drop, see handleDrop).
+  // Validates the file is an image under 8 MB, then stores it and generates a local
+  // preview URL so the guest can see the image before submitting.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -61,23 +97,30 @@ function UploadReceiptContent() {
     }
     setError('');
     setReceiptFile(file);
+    // URL.createObjectURL creates a temporary local URL pointing at the in-memory file,
+    // so the <img> preview can show it without uploading anything yet.
     setReceiptPreview(URL.createObjectURL(file));
   };
 
+  // Handles a file being dropped onto the drop-zone; reuses handleFileChange's validation
+  // logic by faking an input change event shape.
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) handleFileChange({ target: { files: e.dataTransfer.files } } as any);
   };
 
+  // Removes the currently selected/previewed receipt image and resets the file input.
   const clearFile = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Runs when the form is submitted. Validates required fields, optionally uploads the
+  // receipt image to Cloudinary first, then POSTs all the payment details to our API.
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // stop the browser from doing a full page reload on submit
     if (!bookingRef.trim() || !transactionRef.trim() || !transferDate || !amountPaid) {
       setError('Please fill in all required fields.');
       return;
@@ -101,6 +144,8 @@ function UploadReceiptContent() {
 
     setSubmitting(true);
     try {
+      // Send the bank-transfer details (plus the Cloudinary image URL, if any) to our
+      // own API route, which stores it for an admin to review and confirm the booking.
       const res = await fetch('/api/bookings/upload-receipt', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,6 +168,8 @@ function UploadReceiptContent() {
     }
   };
 
+  // Conditional rendering: once the receipt has been submitted successfully, show a
+  // confirmation screen instead of the form (an "early return" pattern).
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 flex items-center justify-center px-4 py-16">
@@ -147,6 +194,8 @@ function UploadReceiptContent() {
     );
   }
 
+  // Convenience flag: true while either the image upload or the form submission is in
+  // flight, used to disable the submit button and show the right spinner text.
   const isBusy = uploading || submitting;
 
   return (
@@ -203,17 +252,24 @@ function UploadReceiptContent() {
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Date of Transfer <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={transferDate}
-                onChange={e => setTransferDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                required
-              />
+              {/* Immediately-invoked function so we can compute minDate/today with
+                  plain JS statements before returning the JSX for the date picker */}
+              {(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                // Guests can only pick a transfer date within the last year, up to today
+                const minDate = new Date(today);
+                minDate.setFullYear(minDate.getFullYear() - 1);
+                return (
+                  <DatePickerField
+                    label={<>Date of Transfer <span className="text-red-500">*</span></>}
+                    value={parseISODate(transferDate)}
+                    minDate={minDate}
+                    maxDate={today}
+                    onChange={d => setTransferDate(toISODate(d))}
+                  />
+                );
+              })()}
             </div>
 
             {/* Amount */}
@@ -326,6 +382,8 @@ function UploadReceiptContent() {
   );
 }
 
+// The route's page component. Wraps the form in <Suspense> because UploadReceiptContent
+// uses useSearchParams(), which requires a Suspense boundary in the App Router.
 export default function UploadReceiptPage() {
   return (
     <Suspense fallback={

@@ -1,10 +1,17 @@
-﻿'use client';
+﻿// Admin page — Messages.
+// Inbox for guest contact-form submissions: list + detail panel, with
+// actions to mark read (automatic on open), star, archive, delete, and
+// write a reply (saved to the message, not necessarily emailed). Talks to
+// /api/admin/messages.
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Trash2, Archive, Star, Clock, Loader2, AlertCircle, Send, X } from 'lucide-react';
 
+// Lifecycle states a contact message can be in.
 type MessageStatus = 'UNREAD' | 'READ' | 'ARCHIVED';
 
+// Shape of a contact-form message as returned by the API.
 interface ContactMessage {
   id: string;
   firstName: string;
@@ -19,6 +26,7 @@ interface ContactMessage {
   createdAt: string;
 }
 
+// Badge color per message subject/category.
 const CATEGORY_COLORS: Record<string, string> = {
   booking:   'bg-blue-100 text-blue-700',
   general:   'bg-green-100 text-green-700',
@@ -27,17 +35,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   other:     'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
 };
 
+// Main page component — rendered at /admin/messages.
 export default function MessagesPage() {
   const [messages, setMessages]           = useState<ContactMessage[]>([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(false);
   const [searchQuery, setSearchQuery]     = useState('');
   const [filterStatus, setFilterStatus]   = useState<MessageStatus | 'all'>('all');
+  // The message currently open in the right-hand detail panel (null = none).
   const [selected, setSelected]           = useState<ContactMessage | null>(null);
   const [replyText, setReplyText]         = useState('');
   const [replyLoading, setReplyLoading]   = useState(false);
   const [actionMsg, setActionMsg]         = useState('');
 
+  // Loads all contact messages from the API.
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -53,8 +64,12 @@ export default function MessagesPage() {
     }
   }, []);
 
+  // Runs once on mount to load messages.
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
+  // Shared helper for all the message actions below (mark read, star,
+  // archive, reply) — they're all just different PATCH "action" values
+  // hitting the same endpoint, so this avoids repeating the fetch boilerplate.
   async function patchMessage(id: string, action: string, extra?: object) {
     const res = await fetch(`/api/admin/messages/${id}`, {
       method:  'PATCH',
@@ -65,6 +80,8 @@ export default function MessagesPage() {
     return res.json() as Promise<ContactMessage>;
   }
 
+  // Opens a message in the detail panel. If it was unread, automatically
+  // marks it as read (mirroring how a real inbox behaves).
   async function handleOpen(msg: ContactMessage) {
     setSelected(msg);
     setReplyText('');
@@ -78,6 +95,8 @@ export default function MessagesPage() {
     }
   }
 
+  // Toggles the star on a message. Stops the click from bubbling up to the
+  // parent row's onClick (which would otherwise also open the message).
   async function handleStar(e: React.MouseEvent, msg: ContactMessage) {
     e.stopPropagation();
     try {
@@ -87,6 +106,7 @@ export default function MessagesPage() {
     } catch { /* silent */ }
   }
 
+  // Archives the currently selected message and closes the detail panel.
   async function handleArchive() {
     if (!selected) return;
     try {
@@ -99,6 +119,8 @@ export default function MessagesPage() {
     }
   }
 
+  // Permanently deletes the currently selected message, after a browser
+  // confirm() dialog to prevent accidental clicks.
   async function handleDelete() {
     if (!selected) return;
     if (!confirm('Delete this message permanently?')) return;
@@ -112,6 +134,8 @@ export default function MessagesPage() {
     }
   }
 
+  // Saves the admin's typed reply against the selected message (note: this
+  // stores the reply text on the record, it does not itself send an email).
   async function handleReply() {
     if (!selected || !replyText.trim()) return;
     setReplyLoading(true);
@@ -128,6 +152,7 @@ export default function MessagesPage() {
     }
   }
 
+  // Applies the search box and status dropdown filters to the full list.
   const filtered = messages.filter(m => {
     const q = searchQuery.toLowerCase();
     const matchSearch =
@@ -269,7 +294,7 @@ export default function MessagesPage() {
             {selected.adminReply ? (
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-xs text-green-700 font-medium mb-1">
-                  Your Reply Â· {selected.repliedAt ? new Date(selected.repliedAt).toLocaleDateString() : ''}
+                  Your Reply · {selected.repliedAt ? new Date(selected.repliedAt).toLocaleDateString() : ''}
                 </p>
                 <p className="text-sm text-green-900">{selected.adminReply}</p>
               </div>

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+// usePathname reads the current URL path client-side, so we can highlight
+// whichever menu item matches the page currently being viewed.
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -20,15 +22,26 @@ import {
   X,
   ShieldCheck,
 } from 'lucide-react';
+
+// Left-hand navigation sidebar shown on every page under /admin. Handles its
+// own mobile open/close state and highlights the active menu item.
 export const AdminSidebar = () => {
   const pathname = usePathname();
+  // Whether the sidebar is expanded on mobile (it's always visible on
+  // desktop via the `lg:translate-x-0` class below).
   const [isOpen, setIsOpen] = useState(false);
+  // Count of unread admin messages, shown as a red badge next to "Messages".
   const [messagesUnread, setMessagesUnread] = useState(0);
 
+  // Runs whenever the route changes: automatically closes the mobile sidebar
+  // after navigating to a new page, so it doesn't stay open over the content.
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
+  // Runs once on mount: fetches the unread message count from the API so the
+  // badge reflects real data. Silently ignores failures (e.g. offline) since
+  // this is a non-critical notification badge.
   useEffect(() => {
     fetch('/api/admin/notifications')
       .then(res => res.json())
@@ -36,6 +49,8 @@ export const AdminSidebar = () => {
       .catch(() => {});
   }, []);
 
+  // List of sidebar links, each with its icon, label, target URL, and an
+  // optional badge count (only "Messages" uses it, via messagesUnread above).
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Calendar, label: 'Reservation', href: '/admin/reservations' },
@@ -54,7 +69,7 @@ export const AdminSidebar = () => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button — only visible below the lg breakpoint */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center"
@@ -62,7 +77,7 @@ export const AdminSidebar = () => {
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Overlay */}
+      {/* Overlay — dims the page behind the sidebar on mobile; clicking it closes the sidebar */}
       {isOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
@@ -70,7 +85,8 @@ export const AdminSidebar = () => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — slides on/off screen on mobile via translate-x classes,
+          always docked open on large screens (lg:translate-x-0) */}
       <aside
         className={`fixed left-0 top-0 h-full glass-strong shadow-2xl z-40 transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -94,6 +110,7 @@ export const AdminSidebar = () => {
         <nav className="p-4 overflow-y-auto" style={{ height: 'calc(100% - 96px)' }}>
           <ul className="space-y-1">
             {menuItems.map((item) => {
+              // Highlight this link if its href matches the current page's path.
               const isActive = pathname === item.href;
               return (
                 <li key={item.href}>
@@ -108,6 +125,7 @@ export const AdminSidebar = () => {
                   >
                     <item.icon size={20} />
                     <span className="flex-1">{item.label}</span>
+                    {/* Red unread-count badge, only rendered when there's a nonzero count */}
                     {item.badge && (
                       <span className="w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
                         {item.badge}

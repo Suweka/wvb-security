@@ -1,8 +1,13 @@
 // components/guest/Navbar.tsx
+// Site-wide top navigation bar for guest-facing pages: contact top bar, main
+// logo + nav links, theme toggle, sign-in/profile dropdown, and a mobile
+// hamburger menu. Also owns the AuthModal so "Sign In" can open it directly.
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+// useSession (next-auth) gives us the currently logged-in user (or null) and
+// a loading state; signOut logs the user out.
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, Phone, Mail, User, LogOut, ChevronDown, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -10,12 +15,21 @@ import { AuthModal } from '@/components/guest/AuthModal'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export const Navbar = () => {
+  // `session` is null when logged out, or an object with user info when
+  // logged in. `status` is 'loading' | 'authenticated' | 'unauthenticated'.
   const { data: session, status } = useSession()
+  // Mobile hamburger menu open/closed.
   const [isOpen, setIsOpen] = useState(false)
+  // Whether the sign-in/register modal is open.
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  // Whether the desktop profile dropdown (avatar menu) is open.
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  // True once the page has been scrolled a little, used to switch the navbar
+  // to a frosted-glass style.
   const [scrolled, setScrolled] = useState(false)
 
+  // Runs once on mount: listens for scroll events to toggle the `scrolled`
+  // style, and cleans up the listener when the component unmounts.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
@@ -33,7 +47,7 @@ export const Navbar = () => {
 
   return (
     <>
-      {/* Top Bar */}
+      {/* Top Bar — small strip above the main nav with contact details */}
       <div className="bg-primary text-white py-2 px-4 text-sm">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -83,7 +97,7 @@ export const Navbar = () => {
 
               <ThemeToggle />
 
-              {/* Auth Section */}
+              {/* Auth Section — three possible states: loading, logged in, logged out */}
               {status === 'loading' ? (
                 <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
               ) : session ? (
@@ -100,6 +114,7 @@ export const Navbar = () => {
                         className="w-9 h-9 rounded-full object-cover border-2 border-primary"
                       />
                     ) : (
+                      // Fallback avatar: first letter of the user's name
                       <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
                         {session.user.name?.charAt(0).toUpperCase() || 'G'}
                       </div>
@@ -113,8 +128,9 @@ export const Navbar = () => {
                   {/* Dropdown Menu */}
                   {dropdownOpen && (
                     <>
-                      {/* Backdrop to close dropdown */}
-                      <div 
+                      {/* Invisible full-screen backdrop — clicking anywhere
+                          outside the dropdown closes it */}
+                      <div
                         className="fixed inset-0 z-30"
                         onClick={() => setDropdownOpen(false)}
                       />
@@ -145,9 +161,9 @@ export const Navbar = () => {
                           <Settings size={16} />
                           <span>My Bookings</span>
                         </Link>
-                        
+
                         <hr className="my-1" />
-                        
+
                         <button
                           onClick={() => {
                             setDropdownOpen(false)
@@ -193,7 +209,7 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation — dropdown panel shown when the hamburger is toggled open */}
         {isOpen && (
           <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
@@ -208,7 +224,7 @@ export const Navbar = () => {
                 </Link>
               ))}
 
-              {/* Mobile Auth Section */}
+              {/* Mobile Auth Section — mirrors the desktop logic above */}
               <div className="border-t pt-3 mt-2">
                 {status === 'loading' ? (
                   <div className="h-10 bg-gray-200 rounded-lg animate-pulse" />
@@ -274,10 +290,10 @@ export const Navbar = () => {
         )}
       </nav>
 
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
+      {/* Auth Modal — controlled by authModalOpen state above; closes itself via onClose */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
       />
     </>
   )

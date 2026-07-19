@@ -1,10 +1,17 @@
-﻿'use client';
+﻿// Admin page — Settings.
+// Two panels: the logged-in admin's account info (with a photo upload) and
+// logout button, plus static read-only property contact details.
+'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Shield, MapPin, Phone, LogOut, Camera, Loader2 } from 'lucide-react';
 import { getAdminUser, setAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
 
+// Uploads the admin's chosen profile photo directly from the browser to
+// Cloudinary (an image-hosting service), using a signed upload: our server
+// first hands out a short-lived signature, then the browser uploads the
+// file straight to Cloudinary's API. Returns the final hosted image URL.
 async function uploadAvatarToCloudinary(file: File): Promise<string> {
   const sigRes = await fetch('/api/upload/signature?folder=admin-avatars');
   if (!sigRes.ok) throw new Error('Could not get upload signature');
@@ -26,13 +33,19 @@ async function uploadAvatarToCloudinary(file: File): Promise<string> {
   return data.secure_url as string;
 }
 
+// Main page component — rendered at /admin/settings.
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  // Ref to the hidden <input type="file"> so we can trigger the native file
+  // picker programmatically from the camera icon / "Change photo" link.
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Runs once on mount: loads the cached admin user (from local storage),
+  // then fetches the latest profile from the server in case the avatar
+  // changed since it was cached.
   useEffect(() => {
     const stored = getAdminUser();
     setUser(stored);
@@ -46,8 +59,13 @@ export default function SettingsPage() {
     }
   }, []);
 
+  // Fires when the admin picks a new profile photo. Uploads it to
+  // Cloudinary, saves the resulting URL to the server, and updates both
+  // local component state and the cached user (so the sidebar/header avatar
+  // updates immediately too).
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset the input so re-selecting the same file still triggers this handler.
     e.target.value = '';
     if (!file || !user) return;
 
@@ -72,6 +90,8 @@ export default function SettingsPage() {
     }
   };
 
+  // Logs the admin out: clears the server session cookie, clears the
+  // locally cached user, and redirects to the login page.
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });

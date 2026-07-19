@@ -1,9 +1,14 @@
-﻿'use client';
+﻿// Admin page — Calendar.
+// Renders a month-grid calendar with bookings plotted on their check-in
+// through check-out dates, plus a sidebar list of upcoming check-ins.
+// Data comes from the getCalendarData() server action in lib/admin-actions.
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { getCalendarData } from '@/lib/admin-actions';
 
+// Shape of a booking as needed for calendar display.
 interface CalendarBooking {
   id: string;
   guestName: string;
@@ -13,6 +18,10 @@ interface CalendarBooking {
   status: 'confirmed' | 'pending';
 }
 
+// Helper: expands a check-in/check-out range into an array of individual
+// date strings (YYYY-MM-DD), one per night stayed. Used to know which
+// calendar cells a booking should appear on. The end date itself (check-out
+// day) is excluded since the guest isn't occupying the room that night.
 function getDatesInRange(checkIn: string, checkOut: string): string[] {
   const dates: string[] = [];
   const start = new Date(checkIn);
@@ -25,7 +34,10 @@ function getDatesInRange(checkIn: string, checkOut: string): string[] {
   return dates;
 }
 
+// Main page component — rendered at /admin/calendar.
 export default function CalendarPage() {
+  // Which month is currently displayed. Initialized lazily (via a function)
+  // to today's month, so the first render already shows the current month.
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth());
@@ -34,6 +46,7 @@ export default function CalendarPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(false);
 
+  // Loads bookings for the calendar from the server action.
   const fetchBookings = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -43,14 +56,20 @@ export default function CalendarPage() {
     setLoading(false);
   }, []);
 
+  // Runs once on mount to load booking data.
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  // getDay() of the 1st of the month tells us which weekday column to start
+  // the grid on (0 = Sunday). getDate() of "day 0" of next month is a trick
+  // for "last day of this month", i.e. how many days the month has.
   const firstDay     = new Date(year, month, 1).getDay();
   const daysInMonth  = new Date(year, month + 1, 0).getDate();
 
+  // Build the full grid of cells: leading blanks to align day 1 under the
+  // correct weekday, followed by one Date per day of the month.
   const days: (Date | null)[] = [
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
@@ -59,6 +78,8 @@ export default function CalendarPage() {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Build date → bookings map for this month
+  // (e.g. { "2026-07-19": [booking1, booking2] }) so each calendar cell can
+  // quickly look up which bookings fall on that day.
   const dateMap: Record<string, CalendarBooking[]> = {};
   for (const b of bookings) {
     for (const d of getDatesInRange(b.checkIn, b.checkOut)) {
@@ -68,19 +89,26 @@ export default function CalendarPage() {
   }
 
   // Upcoming: check-ins from today
+  // Filters to bookings whose check-in date is today or later, then takes
+  // only the first 8 for the sidebar (string comparison works here because
+  // dates are in YYYY-MM-DD format, which sorts correctly as text).
   const todayStr = new Date().toISOString().split('T')[0];
   const upcoming = bookings
     .filter(b => b.checkIn >= todayStr)
     .slice(0, 8);
 
+  // Cycled through for the "Upcoming Check-ins" sidebar cards so consecutive
+  // entries get visually distinct left-border colors.
   const eventColors = ['border-blue-500 bg-blue-50', 'border-green-500 bg-green-50', 'border-purple-500 bg-purple-50', 'border-orange-500 bg-orange-50'];
 
+  // Show a spinner while the initial fetch is in progress.
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
       <Loader2 className="animate-spin text-primary" size={48} />
     </div>
   );
 
+  // Show an error state with a retry button if the fetch failed.
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <AlertCircle className="text-red-500" size={40} />
@@ -104,7 +132,10 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendar */}
         <div className="lg:col-span-3 glass-card hover-lift rounded-2xl p-6">
-          {/* Navigation */}
+          {/* Navigation — clicking prev/next just shifts the month number.
+              JavaScript's Date constructor automatically rolls month -1 or +1
+              over into the previous/next year, so no extra wraparound logic
+              is needed here. */}
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => setCurrentDate(new Date(year, month - 1))}
@@ -130,11 +161,13 @@ export default function CalendarPage() {
             ))}
           </div>
 
-          {/* Grid */}
+          {/* Grid — one cell per entry in `days` (nulls render as empty
+              filler cells so day 1 lines up under the right weekday). */}
           <div className="grid grid-cols-7 gap-1">
             {days.map((date, i) => {
               if (!date) return <div key={i} />;
               const dateStr  = date.toISOString().split('T')[0];
+              // Bookings that fall on this specific day (empty array if none).
               const dayBooks = dateMap[dateStr] ?? [];
               const isToday  = dateStr === todayStr;
 

@@ -1,12 +1,24 @@
-﻿'use client';
+﻿// This is the page shown when a guest's PayHere payment is cancelled during booking
+// (e.g. they click "cancel" on the payment gateway, or the payment fails).
+// It reads the booking reference from the URL query string and offers to retry
+// payment or contact support. No API calls happen on this page — it's purely informational.
+
+// 'use client' — this component runs in the browser because it needs useSearchParams()
+// (reads the current URL's query string) which only works on the client.
+'use client';
 
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { XCircle, RotateCcw, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
+// Inner component that actually reads the URL and renders the cancellation message.
+// It's split out from the default-exported page so it can be wrapped in <Suspense>
+// below (useSearchParams requires a Suspense boundary in Next.js App Router).
 function CancelContent() {
+  // useSearchParams() gives us access to the current URL's ?query=params.
   const searchParams = useSearchParams();
+  // Pull the booking reference (e.g. ?ref=WVB-2026-XXXXXX) out of the URL, if present.
   const ref = searchParams.get('ref') || '—';
 
   return (
@@ -40,6 +52,7 @@ function CancelContent() {
           <Button
             variant="primary"
             size="lg"
+            /* Send the guest back to the booking page, carrying the booking ref so they can retry payment */
             onClick={() => window.location.href = `/booking?ref=${ref}`}
           >
             <RotateCcw size={18} className="mr-2" />
@@ -55,6 +68,10 @@ function CancelContent() {
   );
 }
 
+// The actual page component Next.js renders for this route. It wraps CancelContent
+// in <Suspense> with a spinner fallback, which is required because CancelContent uses
+// useSearchParams() — Next.js needs a Suspense boundary around any component that reads
+// the URL this way so it can render a fallback while the page is still loading.
 export default function BookingCancelPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>

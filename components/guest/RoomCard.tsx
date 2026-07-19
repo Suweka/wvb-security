@@ -18,6 +18,9 @@ interface RoomCardProps {
   badge?: string;
 }
 
+// Reusable room card shown in listing grids (e.g. the rooms browser or
+// homepage highlights) — displays a room's photo, price, key stats, a
+// handful of amenity icons, and a "View Details" link to its full page.
 export const RoomCard: React.FC<RoomCardProps> = ({
   id,
   name,
@@ -29,10 +32,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   amenities = [],
   badge,
 }) => {
+  // Only show the first 4 amenity icons to keep the card compact; the rest
+  // are summarized as "+N more".
   const shownAmenities = amenities.slice(0, 4);
   const extraCount = amenities.length - shownAmenities.length;
 
   return (
+    // motion.div (framer-motion) animates this card in as it scrolls into
+    // view (initial -> whileInView) and lifts slightly on hover (whileHover).
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -49,6 +56,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             style={{ backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
         ) : (
+          // Fallback placeholder (room's initial letter) when no photo is set
           <div className="w-full h-full bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center">
             <span className="text-primary/40 text-5xl font-bold">{name.charAt(0)}</span>
           </div>
@@ -89,6 +97,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {shownAmenities.length > 0 && (
           <div className="flex items-center gap-3 mb-4">
             {shownAmenities.map((a) => {
+              // getFacilityIcon maps a facility's string name (e.g. "wifi")
+              // to the matching lucide-react icon component.
               const Icon = getFacilityIcon(a.icon);
               return (
                 <div key={a.label} title={a.label} className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary">

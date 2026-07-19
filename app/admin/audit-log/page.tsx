@@ -1,8 +1,18 @@
+// Admin page — Audit Log.
+// Shows a searchable, expandable list of "who did what and when" events
+// (logins, room edits, receipt approvals, booking cancellations, etc.)
+// pulled from the /api/admin/audit-log endpoint. Read-only page — it never
+// writes data, it just displays what already happened.
+
+// 'use client' tells Next.js this component runs in the browser (not on the
+// server). It's required here because we use React state and hooks (useState,
+// useEffect) which only work client-side.
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Loader2, AlertCircle, RefreshCw, ShieldCheck, ShieldAlert, ChevronDown } from 'lucide-react';
 
+// Shape of a single audit log row as returned by the API.
 interface AuditLogEntry {
   id: string;
   actor: string;
@@ -13,6 +23,8 @@ interface AuditLogEntry {
   createdAt: string;
 }
 
+// Maps each audit action name to a Tailwind badge color so different event
+// types are visually distinguishable at a glance in the list.
 const ACTION_COLORS: Record<string, string> = {
   LOGIN_SUCCESS:    'bg-green-100 text-green-700',
   LOGIN_FAILED:     'bg-red-100 text-red-700',
@@ -25,13 +37,21 @@ const ACTION_COLORS: Record<string, string> = {
   BOOKING_EDIT:     'bg-blue-100 text-blue-700',
 };
 
+// Main page component — rendered at /admin/audit-log.
 export default function AuditLogPage() {
+  // React state hooks — each useState gives us a value plus a setter function.
+  // Calling the setter schedules a re-render with the new value.
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Tracks which single entry's metadata panel is currently expanded (or null
+  // if none are open) — only one row can be expanded at a time.
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Fetches the audit log from the API. Wrapped in useCallback so the same
+  // function reference is reused across renders (avoids re-running the
+  // effect below unnecessarily).
   const fetchLog = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -47,8 +67,13 @@ export default function AuditLogPage() {
     }
   }, []);
 
+  // useEffect runs side effects (like data fetching) after the component
+  // renders. This one runs once when the page first loads (and again only if
+  // fetchLog itself changes, which it won't since it's memoized above).
   useEffect(() => { fetchLog(); }, [fetchLog]);
 
+  // Client-side search filter — narrows the full entries list down to rows
+  // whose actor, action, or entity type contains the typed search text.
   const filtered = entries.filter(e => {
     const q = searchQuery.toLowerCase();
     return (
@@ -58,14 +83,18 @@ export default function AuditLogPage() {
     );
   });
 
+  // Count of failed login attempts, used to show a security warning banner.
   const failedLogins = entries.filter(e => e.action === 'LOGIN_FAILED').length;
 
+  // Early return: while the fetch is in flight, show a spinner instead of
+  // the page content below.
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
       <Loader2 className="animate-spin text-primary" size={48} />
     </div>
   );
 
+  // Early return: if the fetch failed, show an error state with a retry button.
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <AlertCircle className="text-red-500" size={40} />
@@ -116,7 +145,9 @@ export default function AuditLogPage() {
         <div className="glass-card rounded-2xl overflow-hidden">
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filtered.map(entry => {
+              // Whether this specific row is the one currently expanded.
               const isOpen = expandedId === entry.id;
+              // Only rows with extra metadata (JSON details) are clickable/expandable.
               const hasMetadata = entry.metadata && Object.keys(entry.metadata).length > 0;
               return (
                 <div key={entry.id}>

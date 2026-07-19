@@ -4,17 +4,26 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BookingCalendarProps {
+  // Called whenever the selected check-in/check-out dates change, so the
+  // parent component (e.g. a booking form) can read the current selection.
   onDateSelect: (checkIn: Date | null, checkOut: Date | null) => void;
+  // Dates that should be shown as unavailable/disabled (e.g. already booked).
   unavailableDates?: Date[];
 }
 
+// A month-view calendar for picking a check-in and check-out date pair.
+// The first click selects check-in, the second click (a later date) selects
+// check-out; clicking again after both are set restarts the selection.
 export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   onDateSelect,
   unavailableDates = [],
 }) => {
+  // Which month is currently being displayed.
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  // True while we're waiting for the user to pick the check-out date
+  // (i.e. check-in has been chosen but check-out hasn't yet).
   const [selectingCheckOut, setSelectingCheckOut] = useState(false);
 
   const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -23,6 +32,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  // Works out how many days are in the given month and which weekday
+  // (0 = Sunday) the 1st of the month falls on, so the calendar grid can be
+  // padded with the right number of empty cells at the start.
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -34,6 +46,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return { daysInMonth, startingDayOfWeek };
   };
 
+  // True if `date` matches one of the caller-supplied unavailable dates.
   const isDateUnavailable = (date: Date) => {
     return unavailableDates.some(
       (unavailable) =>
@@ -43,17 +56,22 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     );
   };
 
+  // True if `date` is before today (can't book dates in the past).
   const isDateInPast = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return date < today;
   };
 
+  // True if `date` falls strictly between the selected check-in and check-out
+  // dates, used to visually highlight the whole stay range.
   const isDateInRange = (date: Date) => {
     if (!checkInDate || !checkOutDate) return false;
     return date > checkInDate && date < checkOutDate;
   };
 
+  // Handles a click on a day cell — decides whether it should become the new
+  // check-in date or the check-out date, based on current selection state.
   const handleDateClick = (day: number) => {
     const selectedDate = new Date(
       currentMonth.getFullYear(),
@@ -67,12 +85,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
     if (!checkInDate || (checkInDate && checkOutDate)) {
       // Select check-in date
+      // (either nothing is selected yet, or both dates were already set —
+      // in both cases, this click starts a fresh selection)
       setCheckInDate(selectedDate);
       setCheckOutDate(null);
       setSelectingCheckOut(true);
       onDateSelect(selectedDate, null);
     } else if (selectingCheckOut) {
       // Select check-out date
+      // (only accept it if it's after the chosen check-in date)
       if (selectedDate > checkInDate) {
         setCheckOutDate(selectedDate);
         setSelectingCheckOut(false);
@@ -81,12 +102,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
+  // Advances the displayed month forward by one.
   const nextMonth = () => {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
     );
   };
 
+  // Moves the displayed month back by one, but never earlier than the
+  // current real-world month.
   const prevMonth = () => {
     const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
     const today = new Date();
@@ -95,6 +119,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
+  // Builds the array of day-cell elements for the currently displayed month,
+  // including leading blank cells so the 1st lines up under the correct
+  // weekday column.
   const renderCalendar = () => {
     const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
     const days = [];

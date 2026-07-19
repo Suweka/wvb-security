@@ -1,4 +1,7 @@
-﻿export default function PrivacyPage() {
+﻿// This is the static Privacy Policy page. It's a Next.js Server Component — there's
+// no 'use client' directive, no state, and no interactivity, so it renders once on the
+// server as plain HTML. All the legal text is hard-coded directly in the JSX below.
+export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}

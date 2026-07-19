@@ -1,5 +1,7 @@
 'use client';
 
+// useMemo caches an expensive computed value between renders, only
+// recalculating it when its dependencies change (used below for `stats`).
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,6 +36,8 @@ export interface BrowsableRoom {
 
 type ViewMode = 'grid' | 'list';
 
+// Dropdown options for the "guests" filter — each maps to a minimum guest
+// capacity the room must support ('all' means no filtering).
 const GUEST_OPTIONS = [
   { value: 'all', label: 'All Guests' },
   { value: '1', label: '1 Guest' },
@@ -42,6 +46,7 @@ const GUEST_OPTIONS = [
   { value: '4', label: '4+ Guests' },
 ];
 
+// Dropdown options for the "sort by" selector.
 const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recommended' },
   { value: 'price-low', label: 'Price: Low to High' },
@@ -49,13 +54,23 @@ const SORT_OPTIONS = [
   { value: 'capacity', label: 'Guest Capacity' },
 ];
 
+// The "/rooms" page's main content: a hero banner, a search/filter/sort bar,
+// and the resulting list of rooms (as a grid or list), all driven by client-
+// side state so filtering/sorting/switching views doesn't need a page reload.
+// `rooms` is passed in already-loaded from the server (a Server Component
+// fetches the data and hands it to this Client Component as a prop).
 export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGuests, setFilterGuests] = useState('all');
   const [sortBy, setSortBy] = useState('recommended');
+  // Whether the mobile filter panel is expanded (only relevant on small screens).
   const [showFilters, setShowFilters] = useState(false);
+  // Whether rooms are displayed as a card grid or a horizontal list.
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  // Summary numbers shown in the hero banner (room count, cheapest price,
+  // largest capacity). useMemo avoids recalculating these on every render —
+  // only recompute when the `rooms` prop itself changes.
   const stats = useMemo(() => {
     if (rooms.length === 0) return null;
     const prices = rooms.map(r => r.price);
@@ -66,6 +81,9 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
     };
   }, [rooms]);
 
+  // Recomputed on every render (not memoized) from the raw `rooms` list:
+  // first filters by the search text and guest count, then sorts according
+  // to the selected sort option.
   const filteredRooms = rooms
     .filter(room => {
       const matchesSearch = room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,6 +100,7 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
         case 'capacity':
           return b.maxGuests - a.maxGuests;
         default:
+          // 'recommended' keeps the original order from the server
           return 0;
       }
     });
@@ -109,6 +128,7 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
             </p>
           </motion.div>
 
+          {/* Quick stats strip — only rendered if there's at least one room */}
           {stats && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -135,7 +155,7 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
         </div>
       </section>
 
-      {/* Search and Filter Section */}
+      {/* Search and Filter Section — sticky so it stays visible while scrolling the results */}
       <section className="glass-strong sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -201,6 +221,8 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
+              {/* AnimatePresence + a key tied to the count makes the number
+                  animate (slide/fade) each time the filtered result count changes */}
               <AnimatePresence mode="popLayout">
                 <motion.span
                   key={filteredRooms.length}
@@ -220,6 +242,7 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
             </div>
           </div>
 
+          {/* Three possible outcomes: no matches, grid view, or list view */}
           {filteredRooms.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
@@ -284,7 +307,10 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
   );
 }
 
+// A single room rendered as a horizontal row (used when viewMode === 'list'),
+// as opposed to RoomCard which renders a vertical grid card.
 function RoomListRow({ room }: { room: BrowsableRoom }) {
+  // Only show the first 5 amenity icons to keep the row a reasonable height.
   const shownAmenities = room.amenities.slice(0, 5);
 
   return (

@@ -1,4 +1,7 @@
-﻿export const metadata = {
+﻿// This is the static Refund Policy page — a Server Component with no interactivity.
+// The `metadata` export is a Next.js convention: it sets the browser tab title (and
+// other <head> tags) for this route automatically, without needing a manual <title> tag.
+export const metadata = {
   title: 'Refund Policy | White Vintage Bungalow',
 };
 

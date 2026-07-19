@@ -1,4 +1,6 @@
-﻿export default function TermsPage() {
+﻿// This is the static Terms and Conditions page — a Server Component with no
+// interactivity. All the legal text is hard-coded directly in the JSX below.
+export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-light/10 to-gray-50 animate-fadeIn">
       {/* Hero Section */}

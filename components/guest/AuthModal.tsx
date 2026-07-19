@@ -1,11 +1,18 @@
 // components/guest/AuthModal.tsx
+// Sign-in / registration popup used across the guest site. Supports four
+// ways in: Google OAuth, phone number + SMS OTP, email/password login, and
+// email/password registration — all inside one modal that switches between
+// "views" instead of navigating to separate pages.
 'use client'
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
+// Radix UI's Dialog primitive handles the modal's accessibility behavior
+// (focus trapping, closing on Escape/overlay click, etc.) for us.
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Mail, Lock, Phone, User, Eye, EyeOff, ChevronLeft } from 'lucide-react'
 
+// Which "screen" of the modal is currently shown.
 type AuthView = 'menu' | 'login' | 'register' | 'phone'
 
 interface AuthModalProps {
@@ -15,15 +22,22 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalProps) {
+  // Current screen shown inside the modal (menu of options, login form, etc.)
   const [view, setView] = useState<AuthView>(defaultView)
+  // True while any sign-in/register/OTP request is in flight (disables buttons).
   const [loading, setLoading] = useState(false)
+  // Error message shown above the active form, if the last attempt failed.
   const [error, setError] = useState('')
+  // Whether password fields show plain text instead of dots.
   const [showPassword, setShowPassword] = useState(false)
 
   // OTP state
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
+  // Whether an OTP code has been sent, switching the phone view from
+  // "enter phone number" to "enter the 6-digit code".
   const [otpSent, setOtpSent] = useState(false)
+  // Seconds remaining before the "Resend OTP" button becomes clickable again.
   const [otpTimer, setOtpTimer] = useState(0)
 
   // Login form
@@ -34,6 +48,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
     name: '', email: '', phone: '', password: '', confirmPassword: '',
   })
 
+  // Clears every field and status flag back to its initial state — used
+  // whenever the modal is closed so it opens fresh next time.
   const resetState = () => {
     setError('')
     setLoading(false)
@@ -44,6 +60,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
     setRegisterForm({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
   }
 
+  // Resets all state, returns to the main menu view, and calls the parent's
+  // onClose to actually hide the modal.
   const handleClose = () => {
     resetState()
     setView('menu')
@@ -56,6 +74,9 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   const handleGoogle = () => signIn('google', { callbackUrl: window.location.pathname + window.location.search })
 
   // --- Email Login ---
+  // Submits the login form to next-auth's "credentials" provider.
+  // redirect: false means next-auth returns a result object instead of doing
+  // a full-page redirect, so we can show our own inline error message.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -69,12 +90,16 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
       setError('Invalid email or password.')
     } else {
       handleClose()
+      // Full reload so every part of the page (navbar, etc.) picks up the
+      // new logged-in session.
       window.location.reload()
     }
     setLoading(false)
   }
 
   // --- Email Register ---
+  // Validates the register form, creates the account via the API, then
+  // immediately signs the new user in and closes the modal.
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -110,6 +135,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   }
 
   // --- Phone OTP: Send ---
+  // Validates the phone number, asks the API to text a one-time code, and
+  // starts a 60-second countdown before the user can request another one.
   const handleSendOtp = async () => {
     if (!phone || phone.length < 10) {
       setError('Enter a valid phone number')
@@ -139,6 +166,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   }
 
   // --- Phone OTP: Verify ---
+  // Submits the 6-digit code the user typed to next-auth's custom
+  // "phone-otp" provider, which checks it against what was texted.
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
       setError('Enter the 6-digit OTP')
@@ -161,6 +190,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   }
 
   // Google SVG
+  // Small local component rendering the multi-color Google "G" logo used on
+  // the "Continue with Google" button.
   const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -171,6 +202,9 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
   )
 
   return (
+    // Dialog.Root controls open/closed state. onOpenChange fires when Radix
+    // wants to close the dialog itself (e.g. Escape key or overlay click) —
+    // we route that through our own handleClose so state gets reset too.
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <Dialog.Portal>
         {/* Overlay */}
@@ -197,6 +231,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           )}
 
           {/* ── MENU VIEW ─────────────────────────────── */}
+          {/* The initial screen: choose Google, phone, email login, or register */}
           {view === 'menu' && (
             <div>
               <div className="text-center mb-8">
@@ -446,6 +481,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           )}
 
           {/* ── PHONE OTP VIEW ─────────────────────────────── */}
+          {/* Two-step flow: enter a phone number, then enter the 6-digit code sent to it */}
           {view === 'phone' && (
             <div>
               <div className="text-center mb-6">
@@ -499,6 +535,8 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                       Verification Code
                     </label>
                     <div className="flex gap-2 justify-center">
+                      {/* One single-character input per digit, so it looks
+                          like the classic "6 boxes" OTP entry UI. */}
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <input
                           key={i}
@@ -511,12 +549,16 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                             newOtp[i] = val
                             setOtp(newOtp.join(''))
                             // Auto-focus next
+                            // As soon as a digit is typed, move focus to the
+                            // next box automatically (unless this is the last one).
                             if (val && i < 5) {
                               const next = document.getElementById(`otp-${i + 1}`)
                               next?.focus()
                             }
                           }}
                           onKeyDown={e => {
+                            // Backspace on an empty box jumps focus back to
+                            // the previous box, like native OTP inputs do.
                             if (e.key === 'Backspace' && !otp[i] && i > 0) {
                               document.getElementById(`otp-${i - 1}`)?.focus()
                             }
@@ -536,7 +578,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
                     {loading ? 'Verifying...' : 'Verify & Sign In'}
                   </button>
 
-                  {/* Resend */}
+                  {/* Resend — disabled and shows a countdown until otpTimer reaches 0 */}
                   <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                     Didn't receive the code?{' '}
                     {otpTimer > 0 ? (

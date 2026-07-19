@@ -1,3 +1,8 @@
+// Admin page — Dashboard (the /admin landing page).
+// Shows an overview of the hotel's current state: booking stat cards, room
+// availability, revenue snapshot, recent reservations table, and active
+// tasks. Also acts as a client-side auth gate — redirects to /admin/login
+// if no admin session is found in local storage.
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -19,13 +24,20 @@ import {
   Loader2,
 } from 'lucide-react';
 
+// Main page component — rendered at /admin/dashboard.
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  // Holds the full dashboard payload (stats, room stats, recent bookings,
+  // tasks) once fetched — typed loosely as `any` since it's a big combined
+  // object from the server action.
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState(false);
 
+  // Runs once when the page mounts: checks if an admin is "logged in"
+  // (cached in local storage by lib/auth), and if not, redirects to the
+  // login page. If logged in, kicks off the dashboard data fetch.
   useEffect(() => {
     const adminUser = getAdminUser();
     if (!adminUser) {
@@ -36,6 +48,7 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
+  // Fetches all the numbers/lists the dashboard needs in one call.
   async function fetchDashboardData() {
     setLoading(true);
     setError(false);
@@ -70,8 +83,11 @@ export default function AdminDashboard() {
     );
   }
 
+  // Destructure the combined dashboard payload into its parts for readability.
   const { stats, roomStats, recentBookings, tasks } = data;
 
+  // Configuration for the four top stat cards — pairs each metric with its
+  // icon, color, and label so the JSX below can just .map() over this list.
   const statCards = [
     {
       title: 'Confirmed Bookings',
@@ -115,6 +131,9 @@ export default function AdminDashboard() {
     },
   ];
 
+  // Static placeholder data for the "Distribution" chart — this site only
+  // takes direct bookings (no third-party platforms like Booking.com yet),
+  // so it's hardcoded to 100%.
   const bookingPlatforms = [
     { name: 'Direct Booking', percentage: 100, color: 'bg-primary' },
   ];
@@ -180,6 +199,8 @@ export default function AdminDashboard() {
                 <span className="text-sm text-gray-600 dark:text-gray-400">Available Rooms</span>
                 <span className="font-semibold text-green-600">{roomStats.available}</span>
               </div>
+              {/* Bar width is the available/total percentage; guarded against
+                  divide-by-zero when there are no rooms yet. */}
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-green-500 h-2 rounded-full" style={{ width: roomStats.total > 0 ? `${(roomStats.available / roomStats.total) * 100}%` : '0%' }}></div>
               </div>
@@ -203,6 +224,9 @@ export default function AdminDashboard() {
             <h3 className="text-lg font-semibold">Revenue Status</h3>
           </div>
           <div className="text-center py-8">
+             {/* Revenue divided by 1000 and shown with a "k" suffix (e.g.
+                 250.5k instead of 250500) so the number is easy to scan.
+                 CountUp animates from 0 up to this value on render. */}
              <div className="text-4xl font-bold text-primary mb-2">
                <CountUp end={Number(stats.revenue / 1000)} decimals={1} suffix="k" />
              </div>

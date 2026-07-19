@@ -1,4 +1,12 @@
-﻿'use client';
+﻿// This is the Client Component that renders the logged-in guest's profile page:
+// a tabbed dashboard (Overview / My Bookings / Saved Payments / Loyalty / Edit Profile).
+// It receives the guest's data as a prop from the server (see app/(guest)/profile/page.tsx,
+// which fetches it from the database with Prisma) and handles all the interactive bits:
+// switching tabs, editing profile fields, signing out, and submitting reviews.
+
+// 'use client' — required because this component uses React state (useState) for the
+// active tab, form fields, and modal, plus click handlers like signOut().
+'use client';
 
 import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
@@ -18,8 +26,12 @@ import {
   Loader2,
 } from 'lucide-react';
 
+// Labels for the sidebar navigation tabs, used both to render the buttons and to
+// compare against activeTab state to know which panel to show.
 const TABS = ['Overview', 'My Bookings', 'Saved Payments', 'Loyalty', 'Edit Profile'];
 
+// Styling and point-threshold info for each loyalty tier. `next` is the points needed
+// to reach the *next* tier (null for PLATINUM, since it's the top tier).
 const LOYALTY_TIERS = {
   BRONZE: { label: 'Bronze', color: 'text-amber-700', bg: 'bg-amber-100', next: 500 },
   SILVER: { label: 'Silver', color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', next: 1500 },
@@ -27,10 +39,12 @@ const LOYALTY_TIERS = {
   PLATINUM: { label: 'Platinum', color: 'text-blue-600', bg: 'bg-blue-100', next: null },
 };
 
+// Formats a plain number as an "LKR 12,345.67"-style currency string for display.
 function formatCurrency(amount: number) {
   return `LKR ${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+// Shape of a review the guest has already submitted (used to check alreadyReviewed()).
 interface ExistingReview {
   id: string;
   roomId: string;
@@ -56,24 +70,42 @@ interface ProfileClientProps {
   };
 }
 
+// `user` is passed down from the server component (app/(guest)/profile/page.tsx),
+// which already fetched it from the database — this component just displays and
+// edits it, it doesn't fetch the initial data itself.
 export default function ProfileClient({ user }: ProfileClientProps) {
+  // Which sidebar tab is currently selected/visible.
   const [activeTab, setActiveTab] = useState('Overview');
+  // True while the "Edit Profile" form is being saved (disables the save button).
   const [saving, setSaving] = useState(false);
 
   // Review modal state
+  // The booking currently being reviewed (opens the review modal when non-null).
   const [reviewBooking, setReviewBooking]     = useState<any | null>(null);
+  // The star rating (1-5) the guest has selected in the review modal.
   const [reviewRating, setReviewRating]       = useState(0);
+  // Which star is currently hovered, used to preview the rating before clicking.
   const [reviewHover, setReviewHover]         = useState(0);
+  // The free-text comment typed into the review modal.
   const [reviewComment, setReviewComment]     = useState('');
+  // True while the review is being submitted to the API.
   const [reviewLoading, setReviewLoading]     = useState(false);
   const [reviewError, setReviewError]         = useState('');
+  // Room IDs the guest has reviewed *during this session* (before the page data
+  // refreshes), so the "Leave a Review" button can hide immediately after submitting.
   const [submittedRooms, setSubmittedRooms]   = useState<string[]>([]);
 
+  // True if the guest has already reviewed this room, either from data loaded on page
+  // load (user.reviews) or from a review they just submitted this session (submittedRooms).
   const alreadyReviewed = (roomId: string) =>
     (user.reviews || []).some(r => r.roomId === roomId) || submittedRooms.includes(roomId);
 
+  // True if the booking's check-out date has already passed — only past, completed
+  // stays are eligible for a review.
   const isPastStay = (checkOut: string) => new Date(checkOut) < new Date();
 
+  // Submits the guest's star rating + comment for the selected booking's room to the
+  // /api/reviews endpoint, then closes the modal and marks the room as reviewed.
   async function handleSubmitReview() {
     if (!reviewBooking || reviewRating === 0) return;
     setReviewLoading(true);
@@ -105,6 +137,8 @@ export default function ProfileClient({ user }: ProfileClientProps) {
     }
   }
 
+  // Editable copy of the profile fields, pre-filled from the user prop. Kept separate
+  // from `user` itself so edits don't mutate the original prop directly.
   const [profileForm, setProfileForm] = useState({
     name: user.name || '',
     phone: user.phone || '',
@@ -113,8 +147,10 @@ export default function ProfileClient({ user }: ProfileClientProps) {
     preferredLanguage: user.preferredLanguage || 'en',
   });
 
+  // Look up the display label/color/next-threshold for the guest's current loyalty tier.
   const tier = LOYALTY_TIERS[user.loyaltyTier];
 
+  // Sends the edited profile fields to the /api/profile endpoint (PATCH = partial update).
   const handleProfileSave = async () => {
     setSaving(true);
     try {
@@ -198,6 +234,8 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   {tab}
                 </button>
               ))}
+              {/* signOut() comes from next-auth; callbackUrl tells it to redirect to
+                  the homepage after the session is cleared */}
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 border-l-4 border-transparent"
@@ -277,6 +315,8 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 ) : (
                   <div className="space-y-4">
                     {user.bookings.map((booking: any) => {
+                      // Bank-transfer bookings need a manually uploaded receipt that an
+                      // admin verifies, unlike card/online payments which confirm instantly.
                       const isBankTransfer  = booking.paymentMethod === 'bank';
                       const receiptStatus   = booking.bankTransferReceipt?.status;
                       const receiptUploaded = !!booking.bankTransferReceipt;
@@ -349,7 +389,9 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                             ) : null
                           )}
 
-                          {/* Review action — only for past confirmed stays */}
+                          {/* Review action — only for past confirmed stays. Shows a
+                              "Reviewed" badge if already reviewed, otherwise a button
+                              that opens the review modal (sets reviewBooking) */}
                           {booking.status === 'CONFIRMED' && isPastStay(booking.checkOut) && (
                             alreadyReviewed(booking.room?.id) ? (
                               <span className="flex items-center gap-1 text-sm text-green-600 font-medium">

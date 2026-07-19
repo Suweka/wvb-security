@@ -13,6 +13,8 @@ const MONTH_NAMES = [
 ];
 const DAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
+// A small popover calendar used for picking a single date (check-in or
+// check-out). Rendered twice below — once per date field.
 function MiniCalendar({
   selected,
   minDate,
@@ -22,6 +24,8 @@ function MiniCalendar({
   minDate: Date;
   onSelect: (d: Date) => void;
 }) {
+  // Which month the calendar is currently showing. Starts on the selected
+  // date's month, or minDate's month if nothing is selected yet.
   const init = selected ?? minDate;
   const [viewMonth, setViewMonth] = useState(new Date(init.getFullYear(), init.getMonth()));
 
@@ -30,6 +34,8 @@ function MiniCalendar({
   const firstDow = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
 
+  // Build the grid of cells: `firstDow` empty leading cells, then one Date
+  // per day of the month, so days line up under the correct weekday column.
   const cells: (Date | null)[] = [
     ...Array(firstDow).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => new Date(y, m, i + 1)),
@@ -99,33 +105,46 @@ function MiniCalendar({
 
 // ── Main widget ────────────────────────────────────────────────────────────────
 
+// Formats a Date as "Jan 1, 2026" for display, or null if no date is set.
 function fmtDate(d: Date | null) {
   if (!d) return null;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Formats a Date as "YYYY-MM-DD" for use in a URL query string.
 function toISODate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Returns today's date with the time zeroed out, so date comparisons ("is
+// this date in the past?") aren't thrown off by the current time of day.
 function todayMidnight() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
+// Which mini-calendar popover (if any) is currently open.
 type Picker = 'checkIn' | 'checkOut' | null;
 
+// The "Check Availability" search bar shown on the homepage — lets a visitor
+// pick check-in/check-out dates and guest count, then navigates to the
+// booking page with those values pre-filled in the URL.
 export function QuickBookingWidget() {
   const router = useRouter();
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [guests, setGuests] = useState(2);
+  // Tracks which popover (check-in calendar, check-out calendar, or neither) is open.
   const [openPicker, setOpenPicker] = useState<Picker>(null);
   const [error, setError] = useState('');
+  // Reference to the whole widget's wrapper div, used to detect clicks
+  // outside it (to auto-close an open calendar popover).
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close calendar on outside click
+  // Close calendar on outside click.
+  // Runs once on mount: listens for any mousedown on the page; if the click
+  // wasn't inside this widget, close whichever picker is open.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -136,22 +155,29 @@ export function QuickBookingWidget() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Opens `picker` if it's currently closed, or closes it if it's already open.
   const toggle = (picker: Picker) =>
     setOpenPicker(prev => (prev === picker ? null : picker));
 
+  // Called when a check-in date is picked from its MiniCalendar.
   const handleCheckIn = (d: Date) => {
     setCheckIn(d);
+    // If the existing check-out date is no longer after the new check-in
+    // date, clear it so the user has to re-pick a valid one.
     if (checkOut && d >= checkOut) setCheckOut(null);
     setError('');
     setOpenPicker('checkOut'); // auto-advance to check-out
   };
 
+  // Called when a check-out date is picked from its MiniCalendar.
   const handleCheckOut = (d: Date) => {
     setCheckOut(d);
     setError('');
     setOpenPicker(null);
   };
 
+  // Validates the current selection and, if valid, navigates to the booking
+  // page with checkIn/checkOut/guests encoded as query parameters.
   const handleSearch = () => {
     setError('');
     const today = todayMidnight();
@@ -171,6 +197,8 @@ export function QuickBookingWidget() {
   };
 
   const today = todayMidnight();
+  // The earliest date selectable for check-out: the day after check-in (if
+  // chosen), otherwise the day after today.
   const checkOutMin = checkIn
     ? new Date(checkIn.getTime() + 86_400_000)
     : new Date(today.getTime() + 86_400_000);
@@ -266,6 +294,7 @@ export function QuickBookingWidget() {
         </div>
       </div>
 
+      {/* Validation error message from handleSearch(), if any */}
       {error && (
         <div className="px-6 py-3 bg-red-50 border-t border-red-200 flex items-start gap-3">
           <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />

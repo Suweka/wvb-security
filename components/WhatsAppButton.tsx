@@ -1,6 +1,11 @@
+// Floating "chat on WhatsApp" button shown in the bottom-right corner of
+// every page (rendered once, from app/layout.tsx). Clicking it opens
+// WhatsApp (app or web) with the hotel's number and a pre-filled message.
 'use client';
 
 const WHATSAPP_NUMBER = '94777180599';
+// encodeURIComponent makes the message safe to embed in a URL query string
+// (spaces, punctuation, etc. get escaped).
 const WHATSAPP_MESSAGE = encodeURIComponent('Hello! I have a question about a booking at White Vintage Bungalow.');
 
 export default function WhatsAppButton() {
@@ -21,6 +26,8 @@ export default function WhatsAppButton() {
         {/* Inner glow ring */}
         <span className="absolute inset-[-3px] rounded-full bg-[#25D366] opacity-15 group-hover:opacity-30 transition-opacity duration-300" />
 
+        {/* wa.me/<number>?text=<message> is WhatsApp's standard "click to chat"
+            link format — it opens a chat with that number pre-filled with text */}
         <a
           href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`}
           target="_blank"

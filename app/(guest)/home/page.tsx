@@ -1,4 +1,11 @@
-﻿'use client';
+﻿// This is the public homepage — the main landing page for the site. It renders a hero
+// banner, a quick booking widget, an about blurb, featured rooms, services, a video,
+// Google reviews, a location map, and a newsletter signup form that POSTs to
+// /api/newsletter/subscribe.
+
+// 'use client' — required because this page has interactive state (the newsletter form)
+// and uses framer-motion animations, both of which need the browser.
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -28,12 +35,20 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
+  // React state hook — the text currently typed into the newsletter email input.
+  // React state (created with useState) causes the component to re-render whenever
+  // it's updated via its setter function (e.g. setNewsletterEmail).
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  // True while the subscribe request is in flight — used to disable the button/show a spinner.
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  // Holds the result popup to show after subscribing (success or error message), or
+  // null when no popup should be shown.
   const [newsletterPopup, setNewsletterPopup] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Runs when the newsletter form is submitted. Sends the email to our
+  // /api/newsletter/subscribe endpoint and shows a success/error popup based on the result.
   const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // stop the browser's default full-page form submission
     if (!newsletterEmail.trim()) return;
     setNewsletterLoading(true);
     setNewsletterPopup(null);
@@ -58,6 +73,8 @@ export default function HomePage() {
   };
 
   // Mock data - replace with API calls
+  // Hard-coded featured rooms shown in the "Featured Rooms" section (real room data
+  // for booking lives elsewhere, e.g. app/(guest)/rooms/page.tsx which fetches from Prisma).
   const rooms = [
     {
       id: 'deluxe-room',
@@ -90,6 +107,7 @@ export default function HomePage() {
     },
   ];
 
+  // Static list of amenities/services shown as icon cards in the "Our Services" section.
   const services = [
     { icon: ChefHat,  title: 'In-House Chef',            description: 'Enjoy freshly prepared home-style meals from our dedicated in-house chef' },
     { icon: Wifi,     title: 'Free WiFi',                 description: 'High-speed internet access throughout the entire property' },
@@ -114,7 +132,7 @@ export default function HomePage() {
         {/* Depth gradient so text always pops */}
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-gray-900/40" />
 
-        <div className="relative z-10 text-center max-w-4xl px-4">
+        <div className="relative z-10 text-center max-w-4xl w-full min-w-0 px-4">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}

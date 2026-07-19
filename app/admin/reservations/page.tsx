@@ -1,13 +1,22 @@
-﻿'use client';
+﻿// Admin page — Reservations.
+// The main bookings table: search/filter, view details, edit dates/room/
+// guest count, cancel a booking, and review bank-transfer payment receipts
+// (approve confirms the booking + emails the guest, reject cancels it).
+// Wrapped in <Suspense> because it reads the ?q= URL search param.
+'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { Search, Plus, Eye, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink, X, Pencil } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { getReservationsData, getRoomsData } from '@/lib/admin-actions';
 
+// Lifecycle states a reservation can be in.
 type ReservationStatus = 'confirmed' | 'pending' | 'cancelled';
+// Review states for a submitted bank-transfer payment receipt.
 type ReceiptStatus     = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// Shape of a bank-transfer receipt attached to a reservation (guests upload
+// these when paying by bank transfer instead of card).
 interface Receipt {
   id:             string;
   transactionRef: string | null;
@@ -18,6 +27,7 @@ interface Receipt {
   status:         ReceiptStatus;
 }
 
+// Shape of a reservation row as returned by the API.
 interface Reservation {
   id:            string;
   guestName:     string;
@@ -35,30 +45,41 @@ interface Reservation {
   receipt:       Receipt | null;
 }
 
+// Minimal room info used to populate the "Room" dropdown in the edit modal.
 interface RoomOption {
   id:    string;
   name:  string;
   price: number;
 }
 
+// Actual page content. Split out so it can be wrapped in <Suspense> below
+// (useSearchParams() requires a Suspense boundary in Next.js's App Router).
 function ReservationsContent() {
+  // Reads the current URL's query string to pre-fill the search box if the
+  // admin arrived via a search link (e.g. from the header's global search).
   const searchParams = useSearchParams();
   const [searchQuery,     setSearchQuery]     = useState(searchParams.get('q') || '');
   const [filterStatus,    setFilterStatus]    = useState<ReservationStatus | 'all'>('all');
   const [reservations,    setReservations]    = useState<Reservation[]>([]);
   const [loading,         setLoading]         = useState(true);
   const [error,           setError]           = useState(false);
+  // The reservation whose bank-transfer receipt is being reviewed in a modal.
   const [selectedReceipt, setSelectedReceipt] = useState<Reservation | null>(null);
   const [reviewLoading,   setReviewLoading]   = useState(false);
   const [reviewMessage,   setReviewMessage]   = useState('');
+  // The reservation shown in the read-only "view details" modal.
   const [viewDetail,      setViewDetail]      = useState<Reservation | null>(null);
+  // Tracks which single reservation is currently being cancelled, so only
+  // its button shows a spinner.
   const [cancellingId,    setCancellingId]    = useState<string | null>(null);
   const [rooms,           setRooms]           = useState<RoomOption[]>([]);
+  // The reservation currently open in the "Edit Reservation" modal.
   const [editTarget,      setEditTarget]      = useState<Reservation | null>(null);
   const [editForm,        setEditForm]        = useState({ roomId: '', checkIn: '', checkOut: '', guests: 1 });
   const [editLoading,     setEditLoading]     = useState(false);
   const [editError,       setEditError]       = useState('');
 
+  // Loads the full reservations list from the server action.
   async function fetchReservations() {
     setLoading(true);
     setError(false);
@@ -68,17 +89,23 @@ function ReservationsContent() {
     setLoading(false);
   }
 
+  // Runs once on mount: loads reservations, and separately loads the room
+  // list (for the edit modal's room dropdown, including current prices).
   useEffect(() => {
     fetchReservations();
     getRoomsData().then(data => { if (data) setRooms(data.map(r => ({ id: r.id, name: r.name, price: r.price }))); });
   }, []);
 
+  // Opens the "Edit Reservation" modal, pre-filling the form with the
+  // reservation's current room/dates/guest count.
   function openEdit(res: Reservation) {
     setEditTarget(res);
     setEditForm({ roomId: res.roomId, checkIn: res.checkIn, checkOut: res.checkOut, guests: res.guests });
     setEditError('');
   }
 
+  // Submits the edit form via PATCH, then refetches the reservation list to
+  // pick up recalculated pricing/nights from the server.
   async function handleEditSubmit() {
     if (!editTarget) return;
     setEditLoading(true);
@@ -101,6 +128,7 @@ function ReservationsContent() {
     }
   }
 
+  // Applies the search box and status filter to the full reservation list.
   const filteredReservations = reservations.filter((res) => {
     const matchesSearch =
       res.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,8 +138,12 @@ function ReservationsContent() {
     return matchesSearch && matchesFilter;
   });
 
+  // Bank-transfer bookings whose receipt hasn't been approved/rejected yet —
+  // surfaced in a banner at the top so staff don't miss them.
   const pendingReceipts = reservations.filter(r => r.paymentMethod === 'bank' && r.receipt?.status === 'PENDING');
 
+  // Cancels a reservation after a confirmation prompt (irreversible action),
+  // then updates that row's status locally instead of refetching everything.
   async function handleCancel(bookingId: string) {
     if (!confirm('Cancel this reservation? This cannot be undone.')) return;
     setCancellingId(bookingId);
@@ -130,6 +162,10 @@ function ReservationsContent() {
     }
   }
 
+  // Approves or rejects a bank-transfer receipt. Approving confirms the
+  // booking and triggers a confirmation email to the guest (handled
+  // server-side); rejecting cancels the booking. Either way, refetches the
+  // reservation list afterward to reflect the new status.
   async function handleReceiptAction(receiptId: string, action: 'approve' | 'reject') {
     setReviewLoading(true);
     setReviewMessage('');
@@ -151,6 +187,7 @@ function ReservationsContent() {
     }
   }
 
+  // Maps a reservation status to its badge color classes.
   const getStatusColor = (status: ReservationStatus) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-700';
@@ -556,6 +593,9 @@ function ReservationsContent() {
   );
 }
 
+// The actual default export for this route. Suspense shows a spinner
+// fallback while ReservationsContent (which depends on useSearchParams)
+// resolves.
 export default function ReservationsPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin text-primary" size={48} /></div>}>

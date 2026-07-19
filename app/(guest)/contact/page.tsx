@@ -1,10 +1,17 @@
-﻿'use client';
+﻿// This is the public Contact page. It shows contact details, a contact form that
+// POSTs to /api/contact, an embedded Google Map, and social links.
+
+// 'use client' — required because this page has interactive form state (useState)
+// and an onSubmit handler, which only work in the browser.
+'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Twitter, Instagram, Youtube, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ContactPage() {
+  // React state hook holding the current values of all the contact form's fields.
+  // Calling setFormData triggers a re-render so the inputs reflect what the user typed.
   const [formData, setFormData] = useState({
     firstName: '',
     email: '',
@@ -12,11 +19,16 @@ export default function ContactPage() {
     subject: '',
     message: '',
   });
+  // Tracks whether the form is currently being submitted (used to disable the button
+  // and show "Sending..." text).
   const [submitting, setSubmitting] = useState(false);
+  // Tracks the outcome of the last submission so we can show a success/error banner.
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+  // Runs when the guest submits the contact form. Sends the form data to our
+  // /api/contact endpoint, which presumably emails the enquiry to the hotel.
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // prevent the default full-page-reload form submission
     setSubmitting(true);
     setSubmitStatus('idle');
     try {
@@ -27,6 +39,7 @@ export default function ContactPage() {
       });
       if (!res.ok) throw new Error();
       setSubmitStatus('success');
+      // Clear the form after a successful send.
       setFormData({ firstName: '', email: '', phone: '', subject: '', message: '' });
     } catch {
       setSubmitStatus('error');
@@ -35,6 +48,8 @@ export default function ContactPage() {
     }
   };
 
+  // Generic change handler shared by all form fields (input/textarea/select).
+  // Uses the field's `name` attribute to know which key in formData to update.
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
@@ -42,6 +57,7 @@ export default function ContactPage() {
     });
   };
 
+  // Static list of address/phone/email cards shown near the top of the page.
   const contactInfo = [
     {
       icon: MapPin,
@@ -60,6 +76,7 @@ export default function ContactPage() {
     },
   ];
 
+  // Social media links rendered as icon buttons at the bottom of the "Get in Touch" card.
   const socialLinks = [
     { icon: Facebook, label: 'facebook', url: 'https://facebook.com/whitevintage' },
     { icon: Twitter, label: 'twitter', url: 'https://twitter.com/whitevintage' },
@@ -166,14 +183,14 @@ export default function ContactPage() {
                       value={formData.subject}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     >
-                      <option value="">Select a subject</option>
-                      <option value="booking">Booking Inquiry</option>
-                      <option value="general">General Question</option>
-                      <option value="feedback">Feedback</option>
-                      <option value="complaint">Complaint</option>
-                      <option value="other">Other</option>
+                      <option value="" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Select a subject</option>
+                      <option value="booking" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Booking Inquiry</option>
+                      <option value="general" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">General Question</option>
+                      <option value="feedback" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Feedback</option>
+                      <option value="complaint" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Complaint</option>
+                      <option value="other" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Other</option>
                     </select>
                   </div>
                 </div>

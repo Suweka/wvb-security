@@ -1,3 +1,9 @@
+// Admin layout — wraps every page under /admin (dashboard, rooms,
+// reservations, etc.) with the shared chrome: the sidebar nav, the top
+// header bar (global search, notifications bell, theme toggle, user menu),
+// and a client-side auth guard that redirects to /admin/login if no admin
+// session is cached. The /admin/login page itself opts out of this chrome
+// (see the `pathname === '/admin/login'` checks below).
 'use client';
 
 import { AdminSidebar } from '@/components/admin/Sidebar';
@@ -7,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getAdminUser, clearAuth, type AdminUser } from '@/lib/auth';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
+// One row shown in the global search dropdown (a matching booking or guest).
 interface SearchResult {
   type:     'booking' | 'guest';
   label:    string;
@@ -14,18 +21,24 @@ interface SearchResult {
   href:     string;
 }
 
+// One row shown in the notifications dropdown.
 interface NotificationItem {
   label:    string;
   sublabel: string;
   href:     string;
 }
 
+// Next.js automatically renders this component around every page inside
+// app/admin/**. `children` is whichever page matched the current route.
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  // Hook that gives us the current URL path (e.g. "/admin/rooms") — used to
+  // detect the login page (which skips the sidebar/auth check) and to key
+  // the page transition animation.
   const pathname = usePathname();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,12 +46,19 @@ export default function AdminLayout({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  // useRef holds a mutable value that persists across renders WITHOUT
+  // triggering a re-render when it changes (unlike useState). Used here to
+  // remember the pending debounce timer ID between keystrokes.
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [notifCount, setNotifCount] = useState(0);
   const [notifItems, setNotifItems] = useState<NotificationItem[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
 
+  // Auth guard: on every path change, check if an admin session is cached
+  // locally. If not (and we're not already on the login page), redirect
+  // there. If logged in, also fetch the latest profile (for a fresh avatar
+  // image) from the server.
   useEffect(() => {
     // Skip auth check for login page
     if (pathname === '/admin/login') {
@@ -61,6 +81,11 @@ export default function AdminLayout({
     }
   }, [router, pathname]);
 
+  // Polls the notifications endpoint every 60 seconds (1 minute) so the
+  // bell badge count stays roughly up to date without the admin refreshing
+  // the page. The cleanup function (returned from the effect) clears the
+  // interval when the component unmounts or `pathname` changes, so we never
+  // leak multiple overlapping timers.
   useEffect(() => {
     if (pathname === '/admin/login') return;
     const fetchNotifications = () => {
@@ -74,6 +99,9 @@ export default function AdminLayout({
     return () => clearInterval(interval);
   }, [pathname]);
 
+  // Handles typing in the global search box. Debounced: waits 300ms after
+  // the user stops typing before actually calling the search API, so we
+  // don't fire a network request on every keystroke.
   function handleSearchChange(value: string) {
     setSearchQuery(value);
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
@@ -90,6 +118,7 @@ export default function AdminLayout({
     }, 300);
   }
 
+  // Navigates to a clicked search result and closes/resets the search dropdown.
   function goToSearchResult(href: string) {
     setSearchOpen(false);
     setSearchQuery('');
@@ -101,10 +130,14 @@ export default function AdminLayout({
     return <>{children}</>;
   }
 
+  // While the auth check is running (or if it hasn't found a user yet),
+  // show a minimal loading message instead of the full layout.
   if (loading || !user) {
     return <div className="p-6">Loading...</div>;
   }
 
+  // Logs the admin out: tells the server to clear the session cookie, clears
+  // the locally cached user, and redirects to the login page.
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });

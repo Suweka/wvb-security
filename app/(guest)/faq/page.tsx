@@ -1,13 +1,23 @@
-﻿'use client';
+﻿// This is the public FAQ (Frequently Asked Questions) page. All questions/answers are
+// hard-coded below, grouped into categories. Guests can search and expand/collapse
+// individual questions (an "accordion" UI pattern). No API calls are made on this page.
+
+// 'use client' — required because this page has interactive state: the search box
+// and the expand/collapse behaviour both need React state that only works in the browser.
+'use client';
 
 import React, { useState } from 'react';
 import { ChevronDown, Search, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function FAQPage() {
+  // Current text typed into the search box.
   const [searchTerm, setSearchTerm] = useState('');
+  // Which FAQ item is currently expanded, identified by a computed "global index"
+  // (see globalIndex below). null means none are open. Starts with the first item (0) open.
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
+  // All FAQ content, grouped by category. This is static data — no fetching involved.
   const categories = [
     {
       name: 'Booking & Reservations',
@@ -138,6 +148,9 @@ export default function FAQPage() {
     },
   ];
 
+  // Derived data: for each category, keep only the FAQs whose question or answer
+  // contains the search term (case-insensitive), then drop any category left with
+  // zero matching FAQs. This recalculates on every render as searchTerm changes.
   const filteredCategories = categories.map(category => ({
     ...category,
     faqs: category.faqs.filter(faq =>
@@ -192,6 +205,9 @@ export default function FAQPage() {
                 </h2>
                 <div className="space-y-2">
                   {category.faqs.map((faq, faqIndex) => {
+                    // Combine category + item index into one unique number (assumes
+                    // fewer than 100 FAQs per category) so openIndex can identify
+                    // exactly one FAQ across all categories
                     const globalIndex = categoryIndex * 100 + faqIndex;
                     const isOpen = openIndex === globalIndex;
 
