@@ -14,7 +14,7 @@ export async function getDashboardStats() {
   // Server Actions like this one are callable directly (bypassing the React
   // page and its client-side redirect entirely), so the auth check has to
   // live in here, not just on the page that calls it.
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     // 1. Get total bookings and status counts
     const totalBookings = await prisma.booking.count();
@@ -137,7 +137,7 @@ export async function getDashboardStats() {
 // Fetches every room along with its current status (available / booked /
 // under maintenance / being cleaned), used by the admin "Rooms" page.
 export async function getRoomsData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // start of today, for the "is this room booked right now" check below
@@ -192,7 +192,7 @@ export async function getRoomsData() {
 // Fetches every booking (both from registered users and guest checkouts) for
 // the admin "Reservations" table, including any bank transfer receipt attached.
 export async function getReservationsData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: 'desc' },
@@ -201,6 +201,8 @@ export async function getReservationsData() {
         user:               true,
         guestCheckout:      true,
         bankTransferReceipt: true,
+        payment:            true,
+        refundRequest:      true,
       },
     });
 
@@ -233,6 +235,24 @@ export async function getReservationsData() {
         status: b.status.toLowerCase() as 'confirmed' | 'pending' | 'cancelled',
         guests: b.guests,
         paymentMethod: b.paymentMethod || null,
+        // Booking-level payment status (covers bank transfers, which have no
+        // Payment row — receipt approval flips this to PAID directly).
+        paymentStatus: b.paymentStatus,
+        payment: b.payment ? {
+          status:     b.payment.status,
+          // Refundable through the API only if PayHere's own payment id was
+          // captured (bank transfers and pre-refund-feature payments won't have one).
+          refundable: Boolean(b.payment.payhereId),
+          refundedAt: b.payment.refundedAt?.toISOString().split('T')[0] ?? null,
+        } : null,
+        refundRequest: b.refundRequest ? {
+          status:    b.refundRequest.status,
+          amount:    Number(b.refundRequest.amount),
+          rule:      b.refundRequest.rule,
+          reason:    b.refundRequest.reason,
+          adminNote: b.refundRequest.adminNote,
+          createdAt: b.refundRequest.createdAt.toISOString().split('T')[0],
+        } : null,
         receipt: r ? {
           id:             r.id,
           transactionRef: r.transactionRef,
@@ -254,7 +274,7 @@ export async function getReservationsData() {
 // `User` accounts and one-off `GuestCheckout` records (people who booked without
 // creating an account), then sorting everyone together by join date.
 export async function getGuestsData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const users = await prisma.user.findMany({
       where: { role: 'GUEST' },
@@ -323,7 +343,7 @@ export async function getGuestsData() {
 // reshaping Prisma's enum-style status/priority values into the lowercase
 // strings the UI expects.
 export async function getHousekeepingData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const tasks = await prisma.task.findMany({
       where: { category: 'HOUSEKEEPING' },
@@ -350,7 +370,7 @@ export async function getHousekeepingData() {
 // Fetches non-cancelled bookings (ordered by check-in date) for the admin
 // booking calendar view.
 export async function getCalendarData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const bookings = await prisma.booking.findMany({
       where: { status: { not: 'CANCELLED' } },
@@ -375,7 +395,7 @@ export async function getCalendarData() {
 // Fetches all guest reviews (with reviewer and room info) for the admin
 // "Reviews" page, newest first.
 export async function getReviewsData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const reviews = await prisma.review.findMany({
       include: { user: true, room: true },
@@ -399,7 +419,7 @@ export async function getReviewsData() {
 // a rough occupancy-rate estimate, and a revenue-by-month breakdown for the
 // last 6 months (for a chart).
 export async function getFinancialsData() {
-  if (!requireAdminAction()) return null;
+  if (!(await requireAdminAction())) return null;
   try {
     const totalRevenue = await prisma.payment.aggregate({
       where: { status: 'PAID' },

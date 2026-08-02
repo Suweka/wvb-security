@@ -10,7 +10,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // Deletes the specified image, then re-numbers the remaining images'
 // `order` field (0, 1, 2, ...) so there are no gaps left behind.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; imageId: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -41,7 +41,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 // PATCH /api/admin/rooms/[id]/images/[imageId]
 // Sets the given image as the cover photo (order 0) by swapping it with whatever is currently first.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; imageId: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

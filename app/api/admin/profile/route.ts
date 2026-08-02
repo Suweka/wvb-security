@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 // GET /api/admin/profile?email=...
-// Looks up the AdminProfile row for the given email query param and
-// returns its avatarUrl (or null if no profile exists yet).
+// Looks up the Admin row for the given email query param and returns its
+// avatarUrl (or null if the admin has none set).
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -18,9 +18,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'email is required' }, { status: 400 });
     }
 
-    // Look up the admin's profile row by their email address.
-    const profile = await prisma.adminProfile.findUnique({ where: { email } });
-    return NextResponse.json({ avatarUrl: profile?.avatarUrl ?? null });
+    const admin = await prisma.admin.findUnique({ where: { email }, select: { avatarUrl: true } });
+    return NextResponse.json({ avatarUrl: admin?.avatarUrl ?? null });
   } catch (error) {
     console.error('[GET /api/admin/profile]', error);
     return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 });
@@ -28,10 +27,10 @@ export async function GET(request: NextRequest) {
 }
 
 // PATCH /api/admin/profile
-// Expects { email, avatarUrl } in the JSON body. Creates the admin's
-// profile row if it doesn't exist yet, or updates it if it does.
+// Expects { email, avatarUrl } in the JSON body. Updates the avatar on the
+// admin's own Admin row.
 export async function PATCH(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -40,15 +39,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'email and avatarUrl are required' }, { status: 400 });
     }
 
-    // upsert = "update or insert": if a profile row for this email
-    // already exists, update its avatarUrl; otherwise create a new row.
-    const profile = await prisma.adminProfile.upsert({
-      where:  { email },
-      update: { avatarUrl },
-      create: { email, avatarUrl },
+    const admin = await prisma.admin.update({
+      where: { email },
+      data: { avatarUrl },
+      select: { avatarUrl: true },
     });
 
-    return NextResponse.json({ avatarUrl: profile.avatarUrl });
+    return NextResponse.json({ avatarUrl: admin.avatarUrl });
   } catch (error) {
     console.error('[PATCH /api/admin/profile]', error);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });

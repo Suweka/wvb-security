@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 // amount, payment info) and returns it as a file download
 // (Content-Disposition: attachment).
 export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

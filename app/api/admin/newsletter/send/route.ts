@@ -9,7 +9,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // Expects { subject, message } in the JSON body. Emails every active
 // subscriber individually and reports how many succeeded/failed.
 export async function POST(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

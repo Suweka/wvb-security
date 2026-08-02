@@ -51,6 +51,9 @@ export async function POST(request: NextRequest) {
     const payhereCurrency = get('payhere_currency');
     const statusCode      = get('status_code');
     const md5sig          = get('md5sig');
+    // PayHere's own payment id (distinct from our order_id) — needed later
+    // to call the Refund API against this specific payment.
+    const paymentId       = get('payment_id');
 
     // 1. Verify merchant ID matches ours
     // Sanity check: this notification should be about a payment made to our merchant account.
@@ -108,8 +111,8 @@ export async function POST(request: NextRequest) {
     if (primary) {
       await prisma.payment.upsert({
         where:  { bookingId: primary.id },
-        create: { bookingId: primary.id, amount: Number(payhereAmount), status: paymentStatus },
-        update: { status: paymentStatus, amount: Number(payhereAmount) },
+        create: { bookingId: primary.id, amount: Number(payhereAmount), status: paymentStatus, payhereId: paymentId || null },
+        update: { status: paymentStatus, amount: Number(payhereAmount), payhereId: paymentId || undefined },
       });
 
       // Send confirmation email on successful PayHere payment

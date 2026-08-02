@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 // Returns every concierge request, newest first, as { requests }.
 export async function GET(req: NextRequest) {
   // Only allow logged-in admins to view concierge requests.
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 // request as { request } with a 201 Created status.
 export async function POST(req: NextRequest) {
   // Only admins can create concierge requests through this endpoint.
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

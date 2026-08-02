@@ -197,7 +197,7 @@ export default function AdminLayout({
             <div className="flex items-center gap-4">
               <ThemeToggle />
 
-              <button onClick={() => router.push('/admin/settings')} className="relative p-2 hover:bg-gray-100 dark:hover:bg-white/10 dark:hover:bg-white/10 rounded-lg">
+              <button onClick={() => router.push('/admin/settings')} className="relative p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">
                 <Settings size={20} className="text-gray-600 dark:text-gray-400" />
               </button>
 

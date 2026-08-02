@@ -267,7 +267,7 @@ export default function ReviewsPage() {
                 <h3 className="text-lg font-semibold">{selected.guestName}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{selected.room}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <X size={20} />
               </button>
             </div>

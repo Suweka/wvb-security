@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // GET /api/admin/facilities
 // Returns every facility, alphabetically sorted by label.
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 // body. Falls back to safe defaults if icon/category aren't recognized.
 // Returns the created facility with a 201 status.
 export async function POST(req: NextRequest) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/components/CurrencyProvider';
+import { resolveAdvertisedRate } from '@/lib/pricing';
 import {
   Users,
   Maximize,
@@ -34,6 +36,7 @@ export interface RoomDetailData {
   slug: string;
   name: string;
   price: number;
+  todayRates: { currency: string; market: string; price: number }[];
   maxGuests: number;
   size: number;
   beds: string;
@@ -153,6 +156,9 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   // Defaults to 2 guests, but never more than the room actually allows.
   const [guests, setGuests] = useState(Math.min(2, room.maxGuests));
+
+  const { currency, market, rates } = useCurrency();
+  const displayPrice = resolveAdvertisedRate(room, currency, market, rates);
 
   const images = room.images;
   const hasImages = images.length > 0;
@@ -431,7 +437,7 @@ export function RoomDetailClient({ room }: { room: RoomDetailData }) {
             <div className="sticky top-24 bg-primary-light p-6 rounded-lg shadow-lg">
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl font-bold text-primary">{formatCurrency(room.price)}</span>
+                  <span className="text-4xl font-bold text-primary">{formatCurrency(displayPrice.amount, displayPrice.currency)}</span>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400">per night (includes taxes)</p>
               </div>

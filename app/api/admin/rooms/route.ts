@@ -12,7 +12,7 @@ import { logAudit } from '@/lib/audit-log';
 // name, creates the room (optionally linking facilities), and returns
 // the created room with a 201 status.
 export async function POST(req: NextRequest) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

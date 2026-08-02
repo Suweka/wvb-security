@@ -22,7 +22,10 @@ import {
   X,
   ShieldCheck,
   Tag,
+  UserCog,
+  CalendarDays,
 } from 'lucide-react';
+import { getAdminUser } from '@/lib/auth';
 
 // Left-hand navigation sidebar shown on every page under /admin. Handles its
 // own mobile open/close state and highlights the active menu item.
@@ -33,6 +36,9 @@ export const AdminSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   // Count of unread admin messages, shown as a red badge next to "Messages".
   const [messagesUnread, setMessagesUnread] = useState(0);
+  // Only ADMIN-role admins (not MANAGER) get the "Team" link — this is a
+  // UX nicety only, the real gate is server-side in lib/admin-management.ts.
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Runs whenever the route changes: automatically closes the mobile sidebar
   // after navigating to a new page, so it doesn't stay open over the content.
@@ -50,12 +56,19 @@ export const AdminSidebar = () => {
       .catch(() => {});
   }, []);
 
+  // Runs once on mount: reads the cached admin user's role to decide
+  // whether to show the "Team" link.
+  useEffect(() => {
+    setIsSuperAdmin(getAdminUser()?.role === 'admin');
+  }, []);
+
   // List of sidebar links, each with its icon, label, target URL, and an
   // optional badge count (only "Messages" uses it, via messagesUnread above).
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Calendar, label: 'Reservation', href: '/admin/reservations' },
     { icon: Bed, label: 'Rooms', href: '/admin/rooms' },
+    { icon: CalendarDays, label: 'Pricing', href: '/admin/pricing' },
     { icon: Users, label: 'Guests', href: '/admin/guests' },
     { icon: MessageSquare, label: 'Messages', href: '/admin/messages', badge: messagesUnread || undefined },
     { icon: Package, label: 'Housekeeping', href: '/admin/housekeeping' },
@@ -66,6 +79,7 @@ export const AdminSidebar = () => {
     { icon: Tag, label: 'Coupons', href: '/admin/coupons' },
     { icon: Mail, label: 'Newsletter', href: '/admin/newsletter' },
     { icon: ShieldCheck, label: 'Audit Log', href: '/admin/audit-log' },
+    ...(isSuperAdmin ? [{ icon: UserCog, label: 'Team', href: '/admin/team' }] : []),
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 

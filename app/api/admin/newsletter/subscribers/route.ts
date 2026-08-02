@@ -7,7 +7,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // GET /api/admin/newsletter/subscribers
 // Returns every subscriber (active or not), newest first, as { subscribers }.
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

@@ -20,7 +20,7 @@ interface SearchResult {
 // to 10 combined results as { results }. Returns an empty list if `q` is
 // missing or shorter than 2 characters.
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const q = request.nextUrl.searchParams.get('q')?.trim() || '';

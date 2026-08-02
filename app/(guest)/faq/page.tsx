@@ -218,7 +218,7 @@ export default function FAQPage() {
                       >
                         <button
                           onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
-                          className="w-full px-6 py-4 flex justify-between items-center hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors"
+                          className="w-full px-6 py-4 flex justify-between items-center hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
                         >
                           <span className="text-left font-medium text-gray-900 dark:text-gray-100">
                             {faq.question}

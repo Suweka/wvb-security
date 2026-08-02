@@ -22,7 +22,7 @@ const MANUAL_SOURCES = ['PHONE', 'WHATSAPP', 'WALK_IN'] as const;
 // reservation they've already accepted, not a pending online request),
 // after checking the room exists and isn't already booked for those dates.
 export async function POST(request: NextRequest) {
-  const admin = requireAdmin(request);
+  const admin = await requireAdmin(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

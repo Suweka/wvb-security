@@ -11,7 +11,7 @@ import { logAudit } from '@/lib/audit-log';
 // actually provided are changed. Used for both full edits and the quick
 // "toggle active" switch on the coupons list.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -37,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 // DELETE /api/admin/coupons/[id]
 // Permanently deletes a coupon.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

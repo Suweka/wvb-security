@@ -307,7 +307,7 @@ export default function HousekeepingPage() {
                 )}
                 <button
                   onClick={() => { setEditTask({ ...task }); setActionMsg(''); }}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                 >
                   <Edit size={16} /> Edit Task
                 </button>
@@ -338,7 +338,7 @@ export default function HousekeepingPage() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Edit Task</h2>
-              <button onClick={() => setEditTask(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"><X size={20} /></button>
+              <button onClick={() => setEditTask(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -404,7 +404,7 @@ export default function HousekeepingPage() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">New Housekeeping Task</h2>
-              <button onClick={() => setShowNew(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"><X size={20} /></button>
+              <button onClick={() => setShowNew(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>

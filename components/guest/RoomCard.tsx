@@ -5,12 +5,15 @@ import { Users, Maximize, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
 import { getFacilityIcon } from '@/lib/facility-icons';
+import { useCurrency } from '@/components/CurrencyProvider';
+import { resolveAdvertisedRate } from '@/lib/pricing';
 
 interface RoomCardProps {
   id: string;
   name: string;
   description: string;
   price: number;
+  todayRates?: { currency: string; market: string; price: number }[];
   maxGuests: number;
   size: number;
   image?: string | null;
@@ -26,6 +29,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   name,
   description,
   price,
+  todayRates = [],
   maxGuests,
   size,
   image,
@@ -36,6 +40,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   // are summarized as "+N more".
   const shownAmenities = amenities.slice(0, 4);
   const extraCount = amenities.length - shownAmenities.length;
+  const { currency, market, rates } = useCurrency();
+  const displayPrice = resolveAdvertisedRate({ price, todayRates }, currency, market, rates);
 
   return (
     // motion.div (framer-motion) animates this card in as it scrolls into
@@ -70,7 +76,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         )}
         {/* Price chip floating on the image */}
         <div className="absolute bottom-4 right-4 glass-strong rounded-xl px-3 py-2 shadow-lg">
-          <span className="text-lg font-bold text-primary">{formatCurrency(price)}</span>
+          <span className="text-lg font-bold text-primary">{formatCurrency(displayPrice.amount, displayPrice.currency)}</span>
           <span className="text-gray-600 dark:text-gray-300 text-xs ml-1">/ night</span>
         </div>
       </div>

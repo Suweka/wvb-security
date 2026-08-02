@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // GET /api/admin/messages
 // Returns every contact message, newest first.
 export async function GET(request: NextRequest) {
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

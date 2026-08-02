@@ -11,6 +11,7 @@ import {
   Search, Plus, DollarSign, Loader2, AlertCircle, RefreshCw, Edit, X,
   Upload, Star, Trash2, Users, Maximize, BedDouble, Wrench, CheckCircle2,
 } from 'lucide-react';
+import Link from 'next/link';
 import { getRoomsData } from '@/lib/admin-actions';
 import { getFacilityIcon, FACILITY_ICON_NAMES, FACILITY_CATEGORIES } from '@/lib/facility-icons';
 
@@ -524,6 +525,12 @@ export default function RoomsPage() {
                     >
                       <Edit size={14} /> Edit
                     </button>
+                    <Link
+                      href={`/admin/pricing?room=${room.id}`}
+                      className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+                    >
+                      <DollarSign size={14} /> Pricing
+                    </Link>
                     {room.status === 'maintenance' ? (
                       <button
                         onClick={() => handleResolveMaintenance(room.id)}

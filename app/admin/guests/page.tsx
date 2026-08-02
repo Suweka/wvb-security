@@ -357,7 +357,7 @@ function GuestsContent() {
             {/* Modal header */}
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-bold">Guest Details</h2>
-              <button onClick={closeDetail} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={closeDetail} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <XCircle size={24} />
               </button>
             </div>
@@ -494,7 +494,7 @@ function GuestsContent() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-bold">Add Guest</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <XCircle size={24} />
               </button>
             </div>
@@ -566,7 +566,7 @@ function GuestsContent() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors text-sm"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors text-sm"
                 >
                   Cancel
                 </button>

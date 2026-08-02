@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { RoomDetailClient, type RoomDetailData } from '@/components/guest/RoomDetailClient';
 import { excludeUnderMaintenance } from '@/lib/room-availability';
+import { dateKey, toDateOnly } from '@/lib/pricing';
 
 // Forces Next.js to render this page fresh on every request instead of caching a
 // static version — important because room data (availability, maintenance status)
@@ -32,11 +33,13 @@ const CATEGORY_ORDER = ['room', 'bathroom', 'technology', 'food', 'general'];
 export default async function RoomDetailsPage({ params }: { params: { slug: string } }) {
   // Look up the room by its slug, but only if it's not currently under maintenance
   // (excludeUnderMaintenance is a shared Prisma "where" filter from lib/room-availability).
+  const today = toDateOnly(dateKey(new Date()));
   const room = await prisma.room.findFirst({
     where: { slug: params.slug, ...excludeUnderMaintenance },
     include: {
       images: { orderBy: { order: 'asc' } },
       facilities: true,
+      dailyRates: { where: { date: today } },
     },
   });
 
@@ -71,6 +74,7 @@ export default async function RoomDetailsPage({ params }: { params: { slug: stri
     slug: room.slug as string,
     name: room.name,
     price: Number(room.price),
+    todayRates: room.dailyRates.map(dr => ({ currency: dr.currency, market: dr.market, price: Number(dr.price) })),
     maxGuests: room.maxGuests,
     size: room.size,
     beds: room.beds || '',

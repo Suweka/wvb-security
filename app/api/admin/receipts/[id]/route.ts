@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   // requireAdmin returns the admin's info (e.g. email) when authorized,
   // or a falsy value when not — used both as a guard and to know who
   // performed this action for the audit log.
-  const admin = requireAdmin(request);
+  const admin = await requireAdmin(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -13,7 +13,7 @@ import { logAudit } from '@/lib/audit-log';
 // Expects an optional { note } in the JSON body (used as the task's
 // description). Returns the created task with a 201 status.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // Resolves maintenance by completing every open MAINTENANCE task for the room.
 // Returns { success: true, tasksResolved } with how many tasks were closed.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

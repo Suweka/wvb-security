@@ -11,7 +11,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // Appends the image to the end of this room's gallery order. Returns the
 // created image row with a 201 status.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

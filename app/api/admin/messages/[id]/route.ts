@@ -11,7 +11,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // or 'reply' (save an admin reply and mark read). Returns the updated
 // message, or 400 for an unrecognized action.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 // DELETE /api/admin/messages/[id]
 // Permanently deletes a contact message. Returns { success: true }.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

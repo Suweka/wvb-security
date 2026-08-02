@@ -11,7 +11,7 @@ import { logAudit } from '@/lib/audit-log';
 // body — only the fields actually provided are changed. Returns the
 // updated room.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 // Permanently deletes a room. Fails (500) if the room has related
 // records (e.g. bookings) that prevent deletion. Returns { success: true }.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = requireAdmin(req);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

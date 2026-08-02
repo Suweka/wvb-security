@@ -17,7 +17,7 @@ export async function GET(
   // `params.id` comes from the "[id]" dynamic route segment in the URL.
   { params }: { params: { id: string } }
 ) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

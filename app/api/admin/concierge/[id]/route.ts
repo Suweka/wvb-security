@@ -18,7 +18,7 @@ export async function PATCH(
   // /api/admin/concierge/abc123 -> params.id === "abc123".
   { params }: { params: { id: string } }
 ) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

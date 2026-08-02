@@ -5,8 +5,10 @@ import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 // Sends the "your bank transfer booking is pending" confirmation email.
 import { sendBankTransferPendingEmail } from '@/lib/email';
+import { resolveNightlyRate, dateKey, toDateOnly } from '@/lib/pricing';
+import { isMarket, type Market } from '@/lib/currency';
 
-// Builds a shuman-readable, roughly-unique booking reference like "WVB-2026-A1B2C3" (WVB = White Vintage Bungalow). 
+// Builds a shuman-readable, roughly-unique booking reference like "WVB-2026-A1B2C3" (WVB = White Vintage Bungalow).
 export function generateBookingNumber(): string {
   const year = new Date().getFullYear();
   // Math.random() gives a decimal like 0.482991...
@@ -14,27 +16,61 @@ export function generateBookingNumber(): string {
   return `WVB-${year}-${random}`;
 }
 
-// Looks up a Room in the database by its URL slug (e.g. "family-room").
-async function resolveRoom(slug: string) {
+// Looks up a Room in the database by its URL slug (e.g. "family-room"),
+// including its LKR daily-rate overrides for the requested stay so the
+// real per-night price can be recomputed server-side rather than trusted
+// from the client. Deliberately not filtered by market here — both LOCAL
+// and FOREIGN LKR rows come back, and resolveNightlyRate below picks the
+// right one (with its FOREIGN -> LOCAL fallback) for the actual guest.
+async function resolveRoom(slug: string, checkInDate: Date, checkOutDate: Date) {
   return prisma.room.findUnique({
     where: { slug },
     include: {
       // Rooms with an open MAINTENANCE task are treated as unbookable below.
       tasks: { where: { category: 'MAINTENANCE', status: { not: 'COMPLETED' } }, select: { id: true } },
+      dailyRates: { where: { currency: 'LKR', date: { gte: checkInDate, lt: checkOutDate } } },
     },
   });
 }
 
+// Every night (as "YYYY-MM-DD" keys) from checkIn (inclusive) to checkOut
+// (exclusive) — same convention used everywhere else (availability, admin
+// pricing, the booking flow's own toKey).
+function nightKeysInRange(checkInDate: Date, checkOutDate: Date): string[] {
+  const keys: string[] = [];
+  const cur = new Date(checkInDate);
+  while (cur < checkOutDate) {
+    keys.push(dateKey(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return keys;
+}
 
 export async function POST(request: NextRequest) {
   try {
     // same as writing `const rooms = body.rooms; const checkIn = body.checkIn; ...`.
+    // `totalAmount` sent by the client is intentionally NOT trusted — the real
+    // charge is recomputed below from each room's actual per-night rates.
     const body = await request.json();
-    const { rooms, checkIn, checkOut, guests, guestDetails, paymentMethod, couponCode, totalAmount } = body;
+    const { rooms, checkIn, checkOut, guests, guestDetails, paymentMethod, couponCode } = body;
 
     if (!rooms?.length || !checkIn || !checkOut || !guestDetails?.email) {
       return NextResponse.json({ error: 'Missing required booking fields.' }, { status: 400 });
     }
+
+    const checkInDate = toDateOnly(checkIn);
+    const checkOutDate = toDateOnly(checkOut);
+    const nightKeys = nightKeysInRange(checkInDate, checkOutDate);
+
+    // Which price tier actually applies is read from the same cookie that
+    // drove what the guest was shown while browsing (nc_market, set by
+    // middleware.ts / MarketSwitcher) — never from the request body, so a
+    // booking is always charged what the guest was actually quoted rather
+    // than whatever a client claims. Missing entirely (e.g. an old/direct
+    // API caller) defaults to LOCAL, the cheaper tier — never silently
+    // overcharge due to an absent signal.
+    const marketCookie = request.cookies.get('nc_market')?.value;
+    const market: Market = marketCookie && isMarket(marketCookie) ? marketCookie : 'LOCAL';
 
     // Link to logged-in user if a session exists
     // again — if there's no session, userId just ends up `null`.
@@ -47,7 +83,7 @@ export async function POST(request: NextRequest) {
     const maintenanceSlugs: string[] = [];  // slugs that exist but are currently under maintenance
 
     for (const slug of rooms as string[]) {
-      const room = await resolveRoom(slug);
+      const room = await resolveRoom(slug, checkInDate, checkOutDate);
       if (!room) {
         // No room found for this slug at all — probably a stale link.
         missingSlugs.push(slug);
@@ -94,29 +130,47 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Increment coupon usage if one was applied
+    // Look up the coupon's real discount percentage from the DB (never
+    // trusted from the client) and bump its usage count in the same step.
+    // Only the simple isActive check is applied here — full re-validation
+    // (date window, usage limit) already happens in /api/coupons/validate
+    // before the guest reaches this step; re-checking that here is a
+    // separate, larger effort left for later.
+    let discountPercent = 0;
     if (couponCode) {
-      await prisma.coupon.updateMany({
-        where: { code: couponCode, isActive: true },
-        data:  { usageCount: { increment: 1 } },
-      }).catch(() => {}); // non-fatal if coupon already expired
+      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+      if (coupon?.isActive) {
+        discountPercent = coupon.discountPercent;
+        await prisma.coupon.update({
+          where: { id: coupon.id },
+          data: { usageCount: { increment: 1 } },
+        }).catch(() => {}); // non-fatal if this races with something else
+      }
     }
 
-    // Distribute totalAmount proportionally across rooms by their DB price
-    // combined total nightly rate.
-    const totalNightlyRate = resolvedRooms.reduce((sum, r) => sum + Number(r.price), 0);
+    // Recompute the REAL LKR subtotal from each room's actual per-night
+    // rate (an admin-set RoomDailyRate override where one exists, else the
+    // room's base price) — this is now the authoritative room cost,
+    // replacing the flat Room.price assumption and the client-sent total.
+    const roomSubtotals = resolvedRooms.map(room =>
+      nightKeys.reduce((sum, night) => sum + resolveNightlyRate(room, night, 'LKR', market).amount, 0)
+    );
+    const subtotal = roomSubtotals.reduce((sum, s) => sum + s, 0);
+    const discount = (subtotal * discountPercent) / 100;
+    const tax = (subtotal - discount) * 0.1; // flat 10% tax, same as the booking flow's own display math
+    const total = subtotal - discount + tax;
+
     const baseBookingNumber = generateBookingNumber();
 
     // Create one Booking row per room, all in parallel with Promise.all
     const createdBookings = await Promise.all(
       resolvedRooms.map((room, index) => {
-        // This room's fraction of the total price. If for some reason the
-        // combined nightly rate is 0 (shouldn't happen), fall back to an
-        // even split across however many rooms were booked.
-        const share = totalNightlyRate > 0 ? Number(room.price) / totalNightlyRate : 1 / resolvedRooms.length;
+        // This room's fraction of the real total, weighted by its own real
+        // per-night subtotal (not a flat Room.price share).
+        const share = subtotal > 0 ? roomSubtotals[index] / subtotal : 1 / resolvedRooms.length;
         // Round to 2 decimal places (cents) after applying that share to
         // the overall total.
-        const roomTotal = Math.round(Number(totalAmount) * share * 100) / 100;
+        const roomTotal = Math.round(total * share * 100) / 100;
 
         return prisma.booking.create({
           data: {
@@ -128,8 +182,8 @@ export async function POST(request: NextRequest) {
             guestCheckoutId: guestCheckout.id,
             userId:          userId,
             roomId:          room.id,
-            checkIn:         new Date(checkIn),
-            checkOut:        new Date(checkOut),
+            checkIn:         checkInDate,
+            checkOut:        checkOutDate,
             guests:          Number(guests),
             totalAmount:     roomTotal,
             status:          'PENDING',       // booking isn't confirmed by staff yet
@@ -156,7 +210,7 @@ export async function POST(request: NextRequest) {
         rooms:         resolvedRooms.map(r => r.name).join(', '),
         checkIn:       fmtDate(checkIn),
         checkOut:      fmtDate(checkOut),
-        totalAmount:   Number(totalAmount),
+        totalAmount:   total,
       }).catch(err => console.error('[email] bank transfer email failed:', err));
     }
 

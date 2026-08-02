@@ -278,7 +278,7 @@ export default function MessagesPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">{selected.email}</p>
                 {selected.phone && <p className="text-sm text-gray-500 dark:text-gray-400">{selected.phone}</p>}
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setSelected(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <X size={20} />
               </button>
             </div>
@@ -326,7 +326,7 @@ export default function MessagesPage() {
             <div className="space-y-2">
               <button
                 onClick={handleArchive}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
               >
                 <Archive size={18} /> Archive
               </button>

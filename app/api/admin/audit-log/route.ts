@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   // HTTP request, with helpers like `.nextUrl` for reading query params.
   // requireAdmin checks the request's session/cookie to confirm the
   // caller is a logged-in admin. If not, we reject with 401 Unauthorized.
-  if (!requireAdmin(request)) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

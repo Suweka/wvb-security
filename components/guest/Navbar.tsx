@@ -13,6 +13,8 @@ import { Menu, X, Phone, Mail, User, LogOut, ChevronDown, Settings } from 'lucid
 import { Button } from '@/components/ui/Button'
 import { AuthModal } from '@/components/guest/AuthModal'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { CurrencySwitcher } from '@/components/ui/CurrencySwitcher'
+import { MarketSwitcher } from '@/components/ui/MarketSwitcher'
 
 export const Navbar = () => {
   // `session` is null when logged out, or an object with user info when
@@ -39,7 +41,7 @@ export const Navbar = () => {
 
   const navLinks = [
     { href: '/home', label: 'Home' },
-    { href: '/rooms', label: 'Rooms & Suites' },
+    { href: '/rooms', label: 'Rooms' },
     { href: '/gallery', label: 'Gallery' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
@@ -95,6 +97,8 @@ export const Navbar = () => {
                 </Link>
               ))}
 
+              <MarketSwitcher />
+              <CurrencySwitcher />
               <ThemeToggle />
 
               {/* Auth Section — three possible states: loading, logged in, logged out */}
@@ -196,8 +200,10 @@ export const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile: theme toggle + menu button */}
+            {/* Mobile: market + currency switcher + theme toggle + menu button */}
             <div className="flex items-center gap-2 md:hidden">
+              <MarketSwitcher />
+              <CurrencySwitcher />
               <ThemeToggle />
               <button
                 className="text-gray-700 dark:text-gray-300"

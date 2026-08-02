@@ -141,9 +141,30 @@ model Booking {
   services            ServiceBooking[]
   payment             Payment?
   bankTransferReceipt BankTransferReceipt?
+  refundRequest       RefundRequest?
 
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+}
+
+// A guest's request to be refunded after cancelling a paid booking, filed
+// automatically by the self-service cancel flow (app/api/bookings/cancel).
+// `amount` is the policy-computed refundable amount at cancellation time
+// (see lib/refund-policy.ts); the admin approves (possibly editing the
+// amount) or rejects it from /admin/reservations. Attached to the PRIMARY
+// booking row of a multi-room reservation, since the payment is too.
+model RefundRequest {
+  id          String              @id @default(cuid())
+  bookingId   String              @unique
+  booking     Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  reason      String?             // guest's optional free-text reason
+  amount      Decimal             @db.Decimal(10, 2) // policy-computed refundable LKR amount
+  rule        String              // 'FULL' | 'PARTIAL' | 'NONE' — which policy tier applied
+  status      RefundRequestStatus @default(PENDING)
+  processedAt DateTime?
+  processedBy String?             // admin email
+  adminNote   String?             // e.g. rejection reason
+  createdAt   DateTime            @default(now())
 }
 
 model BankTransferReceipt {
@@ -182,6 +203,7 @@ enum PaymentStatus {
   PENDING
   PAID
   FAILED
+  REFUNDED
 }
 
 // How a booking reached us — almost all bookings are WEBSITE (the normal
@@ -220,6 +242,12 @@ enum ReceiptStatus {
   REJECTED
 }
 
+enum RefundRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // =======================
 // MODELS
 // =======================
@@ -240,6 +268,41 @@ model Room {
   bookings    Booking[]
   reviews     Review[]
   tasks       Task[]
+  dailyRates  RoomDailyRate[]
+}
+
+// A price override for one specific night, optionally in a specific
+// currency and market (local vs. foreign guest). Falls back to Room.price
+// (for LOCAL) or the LOCAL resolution entirely (for FOREIGN, when no
+// foreign-specific row exists) — see lib/pricing.ts's resolveNightlyRate.
+model RoomDailyRate {
+  id       String   @id @default(cuid())
+  roomId   String
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date
+  currency String   // 'LKR' | 'USD' | 'GBP' | 'EUR' | 'AUD'
+  market   Market   @default(LOCAL)
+  price    Decimal  @db.Decimal(10, 2)
+
+  @@unique([roomId, date, currency, market])
+}
+
+// Local (Sri Lankan) vs. foreign guest pricing tier — see /admin/pricing
+// and lib/pricing.ts. Detected via geo-IP (middleware.ts) with a guest
+// manual override (components/ui/MarketSwitcher.tsx).
+enum Market {
+  LOCAL
+  FOREIGN
+}
+
+// Admin-set conversion rate for one non-LKR currency, e.g. currency='USD',
+// rateToLKR=334.50 means "1 USD = 334.50 LKR". Used as the fallback when a
+// room/date has no explicit RoomDailyRate override for that currency — see
+// lib/pricing.ts's convertFromLKR.
+model ExchangeRate {
+  currency  String   @id
+  rateToLKR Decimal  @db.Decimal(10, 4)
+  updatedAt DateTime @updatedAt
 }
 
 model RoomImage {
@@ -273,11 +336,17 @@ model Review {
 }
 
 model Payment {
-  id        String        @id @default(uuid())
-  bookingId String        @unique
-  amount    Decimal       @db.Decimal(10, 2)
-  status    PaymentStatus @default(PENDING)
-  createdAt DateTime      @default(now())
+  id         String        @id @default(uuid())
+  bookingId  String        @unique
+  amount     Decimal       @db.Decimal(10, 2)
+  status     PaymentStatus @default(PENDING)
+  // PayHere's own payment id (distinct from our bookingNumber/order_id),
+  // captured from their notify webhook — required to call the Refund API.
+  // Null for bank-transfer payments and any payment recorded before this
+  // field existed.
+  payhereId  String?
+  refundedAt DateTime?
+  createdAt  DateTime      @default(now())
 
   booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
@@ -399,12 +468,33 @@ model AuditLog {
   @@index([createdAt])
 }
 
-// Admin accounts are currently a hardcoded list (see app/api/auth/login),
-// not a DB table — this holds the one profile field (avatar) that needs
-// to persist per admin email until that's backed by a real Admin model.
-model AdminProfile {
+enum AdminRole {
+  ADMIN     // full access, incl. managing other admins
+  MANAGER   // everything except the Team screen
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(MANAGER)
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// MFA codes emailed to an admin after a correct password, before a real
+// session is issued (see app/api/auth/login and app/api/auth/verify-mfa).
+// Flat/no relation, matching OtpCode's existing style for phone login.
+model AdminLoginCode {
   id        String   @id @default(cuid())
-  email     String   @unique
-  avatarUrl String?
-  updatedAt DateTime @updatedAt
+  adminId   String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  @@index([adminId])
 }

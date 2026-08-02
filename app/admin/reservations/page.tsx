@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Search, Plus, Eye, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink, X, Pencil } from 'lucide-react';
+import { Search, Plus, Eye, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, FileText, ExternalLink, X, Pencil, RotateCcw } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { getReservationsData, getRoomsData } from '@/lib/admin-actions';
 
@@ -27,6 +27,25 @@ interface Receipt {
   status:         ReceiptStatus;
 }
 
+// Payment info for a reservation, used to decide whether the Refund action
+// is available (only for PayHere-paid bookings with a captured payment id).
+interface PaymentInfo {
+  status:     'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  refundable: boolean;
+  refundedAt: string | null;
+}
+
+// A guest-filed refund request (created automatically when a guest cancels
+// a paid booking from their profile), with the policy-computed amount.
+interface RefundRequestInfo {
+  status:    'PENDING' | 'APPROVED' | 'REJECTED';
+  amount:    number;
+  rule:      string; // 'FULL' | 'PARTIAL' | 'NONE'
+  reason:    string | null;
+  adminNote: string | null;
+  createdAt: string;
+}
+
 // Shape of a reservation row as returned by the API.
 interface Reservation {
   id:            string;
@@ -42,6 +61,9 @@ interface Reservation {
   status:        ReservationStatus;
   guests:        number;
   paymentMethod: string | null;
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  payment:       PaymentInfo | null;
+  refundRequest: RefundRequestInfo | null;
   receipt:       Receipt | null;
 }
 
@@ -72,6 +94,16 @@ function ReservationsContent() {
   // Tracks which single reservation is currently being cancelled, so only
   // its button shows a spinner.
   const [cancellingId,    setCancellingId]    = useState<string | null>(null);
+  // The reservation being refunded, shown in a small confirm modal (real
+  // money moves here, so — unlike Cancel — this isn't a single-click action).
+  const [refundTarget,    setRefundTarget]    = useState<Reservation | null>(null);
+  const [refundReason,    setRefundReason]    = useState('');
+  // Editable refund amount (string, for the input) — pre-filled from a
+  // guest's policy-computed refund request when one exists, else the full
+  // booking amount. Blank/invalid falls back to a full refund server-side.
+  const [refundAmount,    setRefundAmount]    = useState('');
+  const [refundLoading,   setRefundLoading]   = useState(false);
+  const [refundError,     setRefundError]     = useState('');
   const [rooms,           setRooms]           = useState<RoomOption[]>([]);
   // The reservation currently open in the "Edit Reservation" modal.
   const [editTarget,      setEditTarget]      = useState<Reservation | null>(null);
@@ -209,6 +241,73 @@ function ReservationsContent() {
       alert('Failed to cancel reservation. Please try again.');
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  // Opens the refund confirm modal, pre-filling the amount from the guest's
+  // policy-computed refund request when one exists (else the full amount).
+  function openRefund(res: Reservation) {
+    setRefundTarget(res);
+    setRefundReason(res.refundRequest?.reason || '');
+    setRefundAmount(String(res.refundRequest?.status === 'PENDING' ? res.refundRequest.amount : res.amount));
+    setRefundError('');
+  }
+
+  // Submits the refund confirm modal: calls the 'refund' action for
+  // refundTarget, which must already be cancelled and paid — the server
+  // re-validates all of this too, this is just the UI-side gate. PayHere
+  // payments go through the Refund API; bank transfers are marked refunded
+  // (the admin sends the money back manually).
+  async function handleRefundConfirm() {
+    if (!refundTarget) return;
+    setRefundLoading(true);
+    setRefundError('');
+    try {
+      const parsedAmount = parseFloat(refundAmount);
+      const res = await fetch(`/api/admin/reservations/${refundTarget.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          action: 'refund',
+          reason: refundReason || undefined,
+          amount: !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRefundError(data.error || 'Refund failed.'); return; }
+      setRefundTarget(null);
+      setRefundReason('');
+      setRefundAmount('');
+      fetchReservations();
+    } catch {
+      setRefundError('Network error. Please try again.');
+    } finally {
+      setRefundLoading(false);
+    }
+  }
+
+  // Rejects the guest's pending refund request (with the reason field as
+  // the note shown to them) without moving any money.
+  async function handleRejectRefund() {
+    if (!refundTarget) return;
+    setRefundLoading(true);
+    setRefundError('');
+    try {
+      const res = await fetch(`/api/admin/reservations/${refundTarget.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'reject-refund', adminNote: refundReason || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRefundError(data.error || 'Failed to reject the request.'); return; }
+      setRefundTarget(null);
+      setRefundReason('');
+      setRefundAmount('');
+      fetchReservations();
+    } catch {
+      setRefundError('Network error. Please try again.');
+    } finally {
+      setRefundLoading(false);
     }
   }
 
@@ -401,6 +500,29 @@ function ReservationsContent() {
                           {cancellingId === res.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                         </button>
                       )}
+                      {res.status === 'cancelled' && res.paymentStatus === 'PAID' && (
+                        <button
+                          onClick={() => openRefund(res)}
+                          className="relative p-2 hover:bg-orange-100 rounded-lg text-orange-600"
+                          title={res.refundRequest?.status === 'PENDING' ? `Refund requested by guest — LKR ${res.refundRequest.amount.toLocaleString()}` : 'Refund'}
+                        >
+                          <RotateCcw size={18} />
+                          {/* Amber dot signals a guest-filed request awaiting action */}
+                          {res.refundRequest?.status === 'PENDING' && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                          )}
+                        </button>
+                      )}
+                      {(res.paymentStatus === 'REFUNDED' || res.payment?.status === 'REFUNDED') && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                          Refunded
+                        </span>
+                      )}
+                      {res.refundRequest?.status === 'REJECTED' && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600" title={res.refundRequest.adminNote || undefined}>
+                          Refund declined
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -431,7 +553,7 @@ function ReservationsContent() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-heading font-bold">Review Bank Transfer Receipt</h2>
-              <button onClick={() => { setSelectedReceipt(null); setReviewMessage(''); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => { setSelectedReceipt(null); setReviewMessage(''); }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <XCircle size={24} />
               </button>
             </div>
@@ -508,7 +630,7 @@ function ReservationsContent() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Booking Details</h2>
-              <button onClick={() => setViewDetail(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setViewDetail(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <X size={20} />
               </button>
             </div>
@@ -553,11 +675,113 @@ function ReservationsContent() {
                   </button>
                 </>
               )}
+              {viewDetail.status === 'cancelled' && viewDetail.paymentStatus === 'PAID' && (
+                <button
+                  onClick={() => { openRefund(viewDetail); setViewDetail(null); }}
+                  className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium"
+                >
+                  {viewDetail.refundRequest?.status === 'PENDING' ? 'Process Refund Request' : 'Refund'}
+                </button>
+              )}
               <button
                 onClick={() => setViewDetail(null)}
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Confirm Modal — a distinct step from Cancel since this moves real money */}
+      {refundTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-xl font-heading font-bold">Refund Payment</h2>
+              <button onClick={() => setRefundTarget(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {refundError && (
+                <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                  {refundError}
+                </div>
+              )}
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-sm space-y-2">
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Booking Ref</span><span className="font-semibold text-primary">{refundTarget.id}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guest</span><span>{refundTarget.guestName}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Paid Amount</span><span className="font-bold">LKR {refundTarget.amount.toLocaleString()}</span></div>
+              </div>
+
+              {/* Guest's refund request, when one exists */}
+              {refundTarget.refundRequest?.status === 'PENDING' && (
+                <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+                  <p className="font-semibold mb-1">Guest requested a refund on {refundTarget.refundRequest.createdAt}</p>
+                  <p>
+                    Policy-computed amount: <strong>LKR {refundTarget.refundRequest.amount.toLocaleString()}</strong>{' '}
+                    ({refundTarget.refundRequest.rule === 'FULL' ? 'full refund — cancelled >24h before check-in'
+                      : refundTarget.refundRequest.rule === 'PARTIAL' ? 'one-night charge deducted — cancelled within 24h'
+                      : 'not eligible per policy — admin override required'})
+                  </p>
+                  {refundTarget.refundRequest.reason && (
+                    <p className="mt-1 italic">&ldquo;{refundTarget.refundRequest.reason}&rdquo;</p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Refund Amount (LKR)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {refundTarget.payment?.refundable
+                  ? "This calls PayHere's Refund API (a partial amount is sent as a partial refund) and cannot be undone from here."
+                  : 'This is a bank-transfer payment — transfer the money back to the guest yourself, then confirm here to record it as refunded.'}
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason / note to guest (optional)</label>
+                <input
+                  type="text"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  placeholder="Guest cancellation"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t flex justify-end gap-3 flex-wrap">
+              <button
+                onClick={() => setRefundTarget(null)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              {refundTarget.refundRequest?.status === 'PENDING' && (
+                <button
+                  onClick={handleRejectRefund}
+                  disabled={refundLoading}
+                  className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium disabled:opacity-60"
+                >
+                  Reject Request
+                </button>
+              )}
+              <button
+                onClick={handleRefundConfirm}
+                disabled={refundLoading}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-60"
+              >
+                {refundLoading && <Loader2 size={16} className="animate-spin" />}
+                {refundLoading ? 'Processing…' : 'Confirm Refund'}
               </button>
             </div>
           </div>
@@ -570,7 +794,7 @@ function ReservationsContent() {
           <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex items-center justify-between">
               <h2 className="text-xl font-heading font-bold">Edit Reservation — {editTarget.id}</h2>
-              <button onClick={() => setEditTarget(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setEditTarget(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <X size={20} />
               </button>
             </div>

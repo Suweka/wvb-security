@@ -10,7 +10,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // JSON body. Creates a new HOUSEKEEPING-category task and returns it
 // (with its linked room and assigned user, if any) with a 201 status.
 export async function POST(req: NextRequest) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

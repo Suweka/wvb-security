@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 // email, phone?, country? } in the JSON body. Returns the created guest
 // with a 201 status.
 export async function POST(req: NextRequest) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

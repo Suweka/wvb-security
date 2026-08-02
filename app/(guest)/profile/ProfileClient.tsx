@@ -9,6 +9,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   User,
@@ -24,7 +25,9 @@ import {
   Award,
   X,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { calculateRefund } from '@/lib/refund-policy';
 
 // Labels for the sidebar navigation tabs, used both to render the buttons and to
 // compare against activeTab state to know which panel to show.
@@ -74,10 +77,18 @@ interface ProfileClientProps {
 // which already fetched it from the database — this component just displays and
 // edits it, it doesn't fetch the initial data itself.
 export default function ProfileClient({ user }: ProfileClientProps) {
+  const router = useRouter();
   // Which sidebar tab is currently selected/visible.
   const [activeTab, setActiveTab] = useState('Overview');
   // True while the "Edit Profile" form is being saved (disables the save button).
   const [saving, setSaving] = useState(false);
+
+  // Cancel-booking modal state — the booking being cancelled (opens the
+  // modal when non-null), the guest's optional reason, and request status.
+  const [cancelBooking, setCancelBooking] = useState<any | null>(null);
+  const [cancelReason, setCancelReason]   = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError]     = useState('');
 
   // Review modal state
   // The booking currently being reviewed (opens the review modal when non-null).
@@ -134,6 +145,37 @@ export default function ProfileClient({ user }: ProfileClientProps) {
       setReviewError('Something went wrong. Please try again.');
     } finally {
       setReviewLoading(false);
+    }
+  }
+
+  // Cancels the reservation via the self-service API. On success the server
+  // has already filed a refund request if the booking was paid — refresh the
+  // server-rendered profile data so statuses/badges update immediately.
+  async function handleCancelBooking() {
+    if (!cancelBooking) return;
+    setCancelLoading(true);
+    setCancelError('');
+    try {
+      const res = await fetch('/api/bookings/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingNumber: cancelBooking.bookingNumber,
+          reason: cancelReason.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCancelError(data.error || 'Failed to cancel the booking.');
+        return;
+      }
+      setCancelBooking(null);
+      setCancelReason('');
+      router.refresh();
+    } catch {
+      setCancelError('Something went wrong. Please try again.');
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -408,6 +450,37 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                               </button>
                             )
                           )}
+
+                          {/* Cancel action — upcoming, not-yet-cancelled stays only.
+                              Multi-room reservations show it only on the primary row
+                              (no "-R" suffix), since cancelling covers all rooms. */}
+                          {booking.status !== 'CANCELLED' && !isPastStay(booking.checkOut) && !/-R\d+$/.test(booking.bookingNumber) && (
+                            <button
+                              onClick={() => { setCancelBooking(booking); setCancelReason(''); setCancelError(''); }}
+                              className="flex items-center gap-1.5 text-sm text-red-600 border border-red-300 px-3 py-1.5 rounded-lg hover:bg-red-50 transition font-medium"
+                            >
+                              <X size={14} />
+                              Cancel Booking
+                            </button>
+                          )}
+
+                          {/* Refund request status — shown once a cancellation has
+                              filed a refund request for this (primary) booking. */}
+                          {booking.refundRequest && (
+                            booking.refundRequest.status === 'PENDING' ? (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-orange-100 text-orange-700">
+                                Refund requested — {formatCurrency(Number(booking.refundRequest.amount))} pending review
+                              </span>
+                            ) : booking.refundRequest.status === 'APPROVED' ? (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                                Refund approved — {formatCurrency(Number(booking.refundRequest.amount))}
+                              </span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700" title={booking.refundRequest.adminNote || undefined}>
+                                Refund declined{booking.refundRequest.adminNote ? ` — ${booking.refundRequest.adminNote}` : ''}
+                              </span>
+                            )
+                          )}
                         </div>
                       </div>
                     )})}
@@ -624,7 +697,7 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 <h2 className="text-xl font-heading font-bold">Leave a Review</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{reviewBooking.room?.name}</p>
               </div>
-              <button onClick={() => setReviewBooking(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <button onClick={() => setReviewBooking(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                 <X size={20} />
               </button>
             </div>
@@ -701,6 +774,100 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           </div>
         </div>
       )}
+
+      {/* Cancel Booking Modal — previews the policy-computed refund outcome
+          before the guest confirms, using the same calculateRefund logic the
+          server applies (lib/refund-policy.ts is a pure shared function). */}
+      {cancelBooking && (() => {
+        const isPaid = cancelBooking.paymentStatus === 'PAID';
+        const refund = isPaid
+          ? calculateRefund({
+              totalAmount: Number(cancelBooking.totalAmount),
+              checkIn: new Date(cancelBooking.checkIn),
+              checkOut: new Date(cancelBooking.checkOut),
+              cancelledAt: new Date(),
+            })
+          : null;
+        return (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="glass-strong rounded-2xl shadow-2xl w-full max-w-md">
+              <div className="p-6 border-b flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-heading font-bold">Cancel Booking</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {cancelBooking.room?.name} &middot; {cancelBooking.bookingNumber}
+                  </p>
+                </div>
+                <button onClick={() => setCancelBooking(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {/* Policy-outcome preview */}
+                {!isPaid ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    No payment has been made for this booking yet, so there is nothing to refund.
+                  </p>
+                ) : refund?.rule === 'FULL' ? (
+                  <div className="bg-green-50 border border-green-300 rounded-lg px-4 py-3 text-sm text-green-800">
+                    You'll receive a <strong>full refund of {formatCurrency(refund.amount)}</strong> (cancelled more
+                    than 24 hours before check-in). A refund request will be sent to our team automatically.
+                  </div>
+                ) : refund?.rule === 'PARTIAL' ? (
+                  <div className="bg-orange-50 border border-orange-300 rounded-lg px-4 py-3 text-sm text-orange-800">
+                    A <strong>one-night charge applies</strong> (cancellation within 24 hours of check-in, per our{' '}
+                    <a href="/refund-policy" target="_blank" className="underline">refund policy</a>). You'll be
+                    refunded <strong>{formatCurrency(refund.amount)}</strong>. A refund request will be sent to our
+                    team automatically.
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-800 flex items-start gap-2">
+                    <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                    <span>
+                      Per our <a href="/refund-policy" target="_blank" className="underline">refund policy</a>, this
+                      cancellation is <strong>not eligible for a refund</strong> (at or after check-in). You can still
+                      cancel, and contact us if you believe an exception applies.
+                    </span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason (optional)</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Tell us why you're cancelling..."
+                    value={cancelReason}
+                    onChange={e => setCancelReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm"
+                  />
+                </div>
+
+                {cancelError && (
+                  <p className="text-sm text-red-600">{cancelError}</p>
+                )}
+              </div>
+
+              <div className="p-6 border-t flex gap-3">
+                <button
+                  onClick={() => setCancelBooking(null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  disabled={cancelLoading}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                >
+                  {cancelLoading ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                  Confirm Cancellation
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { StyledSelect } from '@/components/ui/StyledSelect';
 import { formatCurrency } from '@/lib/utils';
 import { getFacilityIcon } from '@/lib/facility-icons';
+import { useCurrency } from '@/components/CurrencyProvider';
+import { resolveAdvertisedRate } from '@/lib/pricing';
 import {
   Search,
   SlidersHorizontal,
@@ -28,6 +30,7 @@ export interface BrowsableRoom {
   name: string;
   description: string;
   price: number;
+  todayRates: { currency: string; market: string; price: number }[];
   maxGuests: number;
   size: number;
   image: string | null;
@@ -68,18 +71,24 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
   // Whether rooms are displayed as a card grid or a horizontal list.
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  const { currency, market, rates } = useCurrency();
+
   // Summary numbers shown in the hero banner (room count, cheapest price,
   // largest capacity). useMemo avoids recalculating these on every render —
-  // only recompute when the `rooms` prop itself changes.
+  // only recompute when the `rooms` prop or active currency/market/rates
+  // change. The cheapest room is found by true LKR price (never a converted
+  // amount, so it doesn't change with currency/market), then its price is
+  // resolved into the active currency/market for display — always one
+  // room's price, never a mix.
   const stats = useMemo(() => {
     if (rooms.length === 0) return null;
-    const prices = rooms.map(r => r.price);
+    const cheapest = rooms.reduce((min, r) => (r.price < min.price ? r : min), rooms[0]);
     return {
       count: rooms.length,
-      minPrice: Math.min(...prices),
+      minPrice: resolveAdvertisedRate(cheapest, currency, market, rates),
       maxGuests: Math.max(...rooms.map(r => r.maxGuests)),
     };
-  }, [rooms]);
+  }, [rooms, currency, market, rates]);
 
   // Recomputed on every render (not memoized) from the raw `rooms` list:
   // first filters by the search text and guest count, then sorts according
@@ -142,7 +151,7 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
               </div>
               <div className="w-px bg-white/20" />
               <div>
-                <p className="text-3xl font-heading font-bold">{formatCurrency(stats.minPrice)}</p>
+                <p className="text-3xl font-heading font-bold">{formatCurrency(stats.minPrice.amount, stats.minPrice.currency)}</p>
                 <p className="text-sm text-gray-200/80">Starting per night</p>
               </div>
               <div className="w-px bg-white/20" />
@@ -312,6 +321,8 @@ export function RoomsBrowser({ rooms }: { rooms: BrowsableRoom[] }) {
 function RoomListRow({ room }: { room: BrowsableRoom }) {
   // Only show the first 5 amenity icons to keep the row a reasonable height.
   const shownAmenities = room.amenities.slice(0, 5);
+  const { currency, market, rates } = useCurrency();
+  const displayPrice = resolveAdvertisedRate(room, currency, market, rates);
 
   return (
     <motion.div
@@ -339,7 +350,7 @@ function RoomListRow({ room }: { room: BrowsableRoom }) {
         <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
           <h3 className="text-2xl font-heading font-bold text-gray-900 dark:text-gray-100">{room.name}</h3>
           <div className="text-right">
-            <span className="text-2xl font-bold text-primary">{formatCurrency(room.price)}</span>
+            <span className="text-2xl font-bold text-primary">{formatCurrency(displayPrice.amount, displayPrice.currency)}</span>
             <span className="text-gray-500 dark:text-gray-400 text-sm ml-1">/ night</span>
           </div>
         </div>

@@ -24,6 +24,9 @@ import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/components/CurrencyProvider';
+import { resolveAdvertisedRate, resolveStayTotal, resolveNightlyRate, type ExchangeRates } from '@/lib/pricing';
+import type { Market } from '@/lib/currency';
 import { CountUp } from '@/components/guest/CountUp';
 import { Magnetic } from '@/components/ui/Magnetic';
 // Icon components from the lucide-react icon library — each is just a small SVG.
@@ -60,8 +63,18 @@ interface RoomOption {
   id: string;
   name: string;
   price: number;
+  todayRates: { currency: string; market: string; price: number }[];
   maxGuests: number;
   image: string | null;
+}
+
+// One RoomDailyRate row for a room within the currently selected stay,
+// as returned by POST /api/rooms/pricing.
+interface StayRateRow {
+  date: string;
+  currency: string;
+  market: string;
+  price: number;
 }
 
 // Converts a "YYYY-MM-DD" string (as it appears in the URL) into a JS Date
@@ -72,6 +85,19 @@ interface RoomOption {
 function parseLocalDate(dateStr: string): Date | null {
   const d = new Date(dateStr + 'T00:00:00');
   return isNaN(d.getTime()) ? null : d;
+}
+
+// Combined "today's rate" for a set of rooms, in a target display currency —
+// used for advertising a price before specific stay dates are picked (the
+// actual stay total, once dates are chosen, comes from resolveStayTotal
+// instead). Every room can always be expressed in the target currency once
+// an exchange rate is configured (auto-conversion via resolveAdvertisedRate
+// is universal, not per-room), so this only falls back to LKR when no rate
+// is configured for that currency at all.
+function combinedAdvertisedRate(rooms: RoomOption[], targetCurrency: string, market: Market, rates: ExchangeRates): { amount: number; currency: string } {
+  const effective = targetCurrency === 'LKR' || rates[targetCurrency] != null ? targetCurrency : 'LKR';
+  const amount = rooms.reduce((sum, r) => sum + resolveAdvertisedRate(r, effective, market, rates).amount, 0);
+  return { amount, currency: effective };
 }
 
 // The actual page content. Split out from the default-exported component
@@ -211,11 +237,30 @@ function BookingPageContent() {
     return false;
   };
 
+  // Declared here (rather than nearer the JSX that mostly uses it) because
+  // calculateTotal()/calculateDisplayTotal() below close over `market`, and
+  // `totals = calculateTotal()` is invoked further down in this same
+  // component body — it must be initialized before that call runs.
+  const { currency: displayCurrency, market, rates } = useCurrency();
+
+  // Real per-night rates for the selected rooms across the CURRENTLY
+  // selected stay (fetched from /api/rooms/pricing whenever the room
+  // selection or dates change), keyed by room id. Empty until both dates
+  // are picked. This is what makes the total a real per-night sum instead
+  // of assuming one flat nightly rate for the whole stay.
+  const [stayDailyRates, setStayDailyRates] = useState<Record<string, StayRateRow[]>>({});
+
   // Derived values (recomputed on every render — cheap enough not to need
   // memoisation here) describing the currently-selected rooms as a group.
   const selectedRoomObjects = rooms.filter(r => selectedRooms.includes(r.id));
   const totalMaxGuests = selectedRoomObjects.reduce((sum, r) => sum + r.maxGuests, 0) || 1;
-  const totalNightlyRate = selectedRoomObjects.reduce((sum, r) => sum + r.price, 0);
+
+  // Same rooms, reshaped for lib/pricing.ts's resolveNightlyRate/resolveStayTotal
+  // (which expect { price, dailyRates } rather than the RoomOption shape).
+  const priceableRooms = selectedRoomObjects.map(r => ({
+    price: r.price,
+    dailyRates: stayDailyRates[r.id] ?? [],
+  }));
 
   // Adds/removes a room from the selection when its card is clicked.
   // Also clamps the guest count down if removing a room drops the combined
@@ -232,19 +277,79 @@ function BookingPageContent() {
     if (guests > newMax) setGuests(newMax);
   };
 
+  // Every night (as "YYYY-MM-DD" keys) between check-in (inclusive) and
+  // check-out (exclusive) — the same convention used everywhere else
+  // (availability, admin pricing). Empty until both dates are picked.
+  const nightKeysInRange = (): string[] => {
+    if (!checkInDate || !checkOutDate) return [];
+    const keys: string[] = [];
+    const cur = new Date(checkInDate);
+    while (cur < checkOutDate) {
+      keys.push(toKey(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return keys;
+  };
+
   // Computes the full price breakdown (nights, subtotal, discount, tax,
-  // final total) from the current dates/rooms/coupon. Called fresh on
-  // every render rather than being stored in state, since it's cheap to
-  // derive and this keeps it always in sync with its inputs.
+  // final total) from the current dates/rooms/coupon, by summing each
+  // selected room's REAL price for each night of the stay (falling back to
+  // the room's base rate for any night without an admin override). Called
+  // fresh on every render rather than stored in state, since it's cheap to
+  // derive and keeps it always in sync with its inputs. Always priced in
+  // LKR — this is what actually gets submitted to /api/bookings, never
+  // affected by the guest's display currency (see calculateDisplayTotal
+  // below for the currency-aware version shown in the UI).
   const calculateTotal = () => {
-    if (!checkInDate || !checkOutDate) return { nights: 0, subtotal: 0, discount: 0, tax: 0, total: 0 };
-    // Math.ceil rounds up to whole nights even if there's a partial-day difference.
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-    const subtotal = nights * totalNightlyRate;
+    const nightKeys = nightKeysInRange();
+    if (nightKeys.length === 0) return { nights: 0, subtotal: 0, discount: 0, tax: 0, total: 0 };
+    const { nights, subtotal } = resolveStayTotal(priceableRooms, nightKeys, 'LKR', market);
     const discount = appliedCoupon ? (subtotal * appliedCoupon.discountPercent) / 100 : 0;
     const tax = (subtotal - discount) * 0.1; // flat 10% tax on the discounted subtotal
     return { nights, subtotal, discount, tax, total: subtotal - discount + tax };
   };
+
+  // Same breakdown as calculateTotal(), but priced in a target display
+  // currency — purely for showing the guest a number while browsing/
+  // reviewing, never used for the actual booking submission. Before dates
+  // are picked there's no stay to sum, so it falls back to the combined
+  // "today's rate" just to pick a sensible currency label.
+  const calculateDisplayTotal = (targetCurrency: string) => {
+    const nightKeys = nightKeysInRange();
+    if (nightKeys.length === 0) {
+      const { currency } = combinedAdvertisedRate(selectedRoomObjects, targetCurrency, market, rates);
+      return { nights: 0, subtotal: 0, discount: 0, tax: 0, total: 0, currency };
+    }
+    const { nights, subtotal, currency } = resolveStayTotal(priceableRooms, nightKeys, targetCurrency, market, rates);
+    const discount = appliedCoupon ? (subtotal * appliedCoupon.discountPercent) / 100 : 0;
+    const tax = (subtotal - discount) * 0.1;
+    return { nights, subtotal, discount, tax, total: subtotal - discount + tax, currency };
+  };
+
+  // Fetch real per-night rates for the selected rooms whenever the
+  // selection or the picked dates change (and both dates are set).
+  useEffect(() => {
+    if (!checkInDate || !checkOutDate || selectedRooms.length === 0) {
+      setStayDailyRates({});
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/rooms/pricing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomSlugs: selectedRooms, checkIn: toKey(checkInDate), checkOut: toKey(checkOutDate) }),
+    })
+      .then(r => r.json())
+      .then((data: { rooms: { id: string; dailyRates: StayRateRow[] }[] }) => {
+        if (cancelled) return;
+        const byRoom: Record<string, StayRateRow[]> = {};
+        for (const r of data.rooms ?? []) byRoom[r.id] = r.dailyRates;
+        setStayDailyRates(byRoom);
+      })
+      .catch(() => { if (!cancelled) setStayDailyRates({}); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRooms.join(','), checkInDate?.getTime(), checkOutDate?.getTime()]);
 
   // Sends the entered coupon code to the server for validation. The server
   // is the source of truth for whether a coupon is active/valid — we never
@@ -281,8 +386,19 @@ function BookingPageContent() {
   };
 
   // Computed once per render and reused throughout the JSX below (avoids
-  // calling calculateTotal() repeatedly in the summary sidebar).
+  // calling calculateTotal() repeatedly in the summary sidebar). Always LKR
+  // — this is what gets submitted to /api/bookings.
   const totals = calculateTotal();
+
+  // Display-currency price breakdown shown in the UI. Steps 1-2 (browsing)
+  // show the guest's active display currency; steps 3-4 (payment onward)
+  // switch the primary figure to LKR, since that's the exact amount the
+  // guest must bank-transfer / that gets reconciled against their receipt.
+  const isCommitPhase = currentStep === 'payment' || currentStep === 'confirmation';
+  const displayTotals = calculateDisplayTotal(isCommitPhase ? 'LKR' : displayCurrency);
+  // Small "≈ $412 USD" reassurance note shown alongside the LKR total once
+  // in the commit phase, if the guest had been browsing in another currency.
+  const secondaryTotals = isCommitPhase && displayCurrency !== 'LKR' ? calculateDisplayTotal(displayCurrency) : null;
 
   // Builds the array of calendar cells for a given month: `null` for the
   // leading blank cells (so day 1 lines up under the correct weekday
@@ -604,6 +720,7 @@ function BookingPageContent() {
                         card (except the "Details" link) toggles selection. */}
                     {rooms.map((r) => {
                       const isSelected = selectedRooms.includes(r.id);
+                      const rp = resolveAdvertisedRate(r, displayCurrency, market, rates);
                       return (
                         <motion.div
                           key={r.id}
@@ -630,7 +747,7 @@ function BookingPageContent() {
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 dark:text-gray-100">{r.name}</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {formatCurrency(r.price)}/night &middot; Max {r.maxGuests} guests
+                              {formatCurrency(rp.amount, rp.currency)}/night &middot; Max {r.maxGuests} guests
                             </p>
                           </div>
                           {/* View Details link — stops propagation so it doesn't toggle the card */}
@@ -663,11 +780,14 @@ function BookingPageContent() {
                       );
                     })}
                   </div>
-                  {selectedRooms.length > 1 && (
-                    <p className="mt-2 text-sm text-primary font-medium">
-                      {selectedRooms.length} rooms selected &middot; {formatCurrency(totalNightlyRate)}/night combined
-                    </p>
-                  )}
+                  {selectedRooms.length > 1 && (() => {
+                    const combined = combinedAdvertisedRate(selectedRoomObjects, displayCurrency, market, rates);
+                    return (
+                      <p className="mt-2 text-sm text-primary font-medium">
+                        {selectedRooms.length} rooms selected &middot; {formatCurrency(combined.amount, combined.currency)}/night combined
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 {/* Number of Guests — a simple +/- stepper clamped between 1 and totalMaxGuests */}
@@ -1165,7 +1285,14 @@ function BookingPageContent() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
-                      <span className="font-medium">{formatCurrency(totals.total)}</span>
+                      <span className="font-medium">
+                        {formatCurrency(displayTotals.total, displayTotals.currency)}
+                        {secondaryTotals && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 font-normal ml-1">
+                            (&asymp; {formatCurrency(secondaryTotals.total, secondaryTotals.currency)})
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1206,21 +1333,24 @@ function BookingPageContent() {
               <h3 className="text-xl font-heading font-semibold mb-4">Booking Summary</h3>
 
               <div className="mb-4 pb-4 border-b space-y-3">
-                {selectedRoomObjects.map((r) => (
-                  <div key={r.id} className="flex items-center gap-3">
-                    {r.image ? (
-                      <img src={r.image} alt={r.name} className="w-16 h-12 object-cover rounded-md flex-shrink-0" />
-                    ) : (
-                      <div className="w-16 h-12 rounded-md flex-shrink-0 bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center text-primary/40 font-bold text-sm">
-                        {r.name.charAt(0)}
+                {selectedRoomObjects.map((r) => {
+                  const rp = resolveAdvertisedRate(r, displayTotals.currency, market, rates);
+                  return (
+                    <div key={r.id} className="flex items-center gap-3">
+                      {r.image ? (
+                        <img src={r.image} alt={r.name} className="w-16 h-12 object-cover rounded-md flex-shrink-0" />
+                      ) : (
+                        <div className="w-16 h-12 rounded-md flex-shrink-0 bg-gradient-to-br from-primary-light to-primary/20 flex items-center justify-center text-primary/40 font-bold text-sm">
+                          {r.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{r.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(rp.amount, rp.currency)}/night</p>
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{r.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(r.price)}/night</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <p className="text-sm text-gray-600 dark:text-gray-400">{guests} Guest{guests > 1 ? 's' : ''}</p>
               </div>
 
@@ -1246,36 +1376,51 @@ function BookingPageContent() {
                   applied), tax, and the animated final total. */}
               {checkInDate && checkOutDate && (
                 <div className="space-y-2">
-                  {selectedRoomObjects.map((r) => (
-                    <div key={r.id} className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400 truncate mr-2">{r.name} × {totals.nights}n</span>
-                      <span className="font-medium flex-shrink-0">{formatCurrency(r.price * totals.nights)}</span>
-                    </div>
-                  ))}
-                  {appliedCoupon && totals.discount > 0 && (
+                  {selectedRoomObjects.map((r, i) => {
+                    // This room's own share of the stay subtotal, in the
+                    // SAME currency displayTotals already settled on for
+                    // the whole breakdown (nights can have different rates,
+                    // so this is a real per-night sum, not rate × nights).
+                    const roomSubtotal = nightKeysInRange().reduce(
+                      (sum, n) => sum + resolveNightlyRate(priceableRooms[i], n, displayTotals.currency, market, rates).amount,
+                      0
+                    );
+                    return (
+                      <div key={r.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400 truncate mr-2">{r.name} × {totals.nights}n</span>
+                        <span className="font-medium flex-shrink-0">{formatCurrency(roomSubtotal, displayTotals.currency)}</span>
+                      </div>
+                    );
+                  })}
+                  {appliedCoupon && displayTotals.discount > 0 && (
                     <div className="flex justify-between text-green-600 text-sm">
                       <span>Discount ({appliedCoupon.discountPercent}% — {appliedCoupon.code})</span>
-                      <span className="font-medium">−{formatCurrency(totals.discount)}</span>
+                      <span className="font-medium">−{formatCurrency(displayTotals.discount, displayTotals.currency)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Taxes & Fees (10%)</span>
-                    <span className="font-medium">{formatCurrency(totals.tax)}</span>
+                    <span className="font-medium">{formatCurrency(displayTotals.tax, displayTotals.currency)}</span>
                   </div>
                   <div className="pt-3 border-t flex justify-between text-lg font-semibold">
                     <span>Total</span>
-                    {/* `key={totals.total}` forces AnimatePresence to treat every
+                    {/* `key={displayTotals.total}` forces AnimatePresence to treat every
                         total change as a brand-new element, so the pop/fade-in
                         animation replays each time the price updates. */}
                     <AnimatePresence mode="wait">
                       <motion.span
-                        key={totals.total}
+                        key={`${displayTotals.total}-${displayTotals.currency}`}
                         initial={{ scale: 1.15, opacity: 0.4 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                         className="text-primary"
                       >
-                        {formatCurrency(totals.total)}
+                        {formatCurrency(displayTotals.total, displayTotals.currency)}
+                        {secondaryTotals && (
+                          <span className="block text-xs text-gray-400 dark:text-gray-500 font-normal text-right">
+                            &asymp; {formatCurrency(secondaryTotals.total, secondaryTotals.currency)}
+                          </span>
+                        )}
                       </motion.span>
                     </AnimatePresence>
                   </div>

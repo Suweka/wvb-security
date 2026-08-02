@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // DELETE /api/admin/reviews/[id]
 // Permanently removes the review with this id. Returns { success: true }.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

@@ -186,6 +186,111 @@ export async function sendNewsletterWelcomeEmail({ to }: { to: string }) {
   });
 }
 
+// Sent as the second factor of admin login: a 6-digit code the admin must
+// enter within 10 minutes to finish signing in (see app/api/auth/login and
+// app/api/auth/verify-mfa).
+export async function sendAdminLoginCodeEmail({ to, name, code }: { to: string; name: string; code: string }) {
+  await sendEmail({
+    to,
+    subject: `Your admin login code: ${code} | White Vintage Bungalow`,
+    html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
+  ${BRAND_HEADER}
+  <div style="background:#f9f9f9;padding:28px;border:1px solid #e0e0e0">
+    <h2 style="color:#2d6a4f;margin-top:0">Admin Login Verification</h2>
+    <p>Hi <strong>${name}</strong>,</p>
+    <p>Use this code to finish signing in to the admin dashboard:</p>
+
+    <div style="background:#fff;border:2px solid #208f6a;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
+      <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#2d6a4f">${code}</span>
+    </div>
+
+    <p style="font-size:14px;color:#666">This code expires in <strong>10 minutes</strong>.</p>
+    <p style="font-size:13px;color:#888">If you didn't try to log in, you can ignore this email — your account is still secure.</p>
+    ${BRAND_FOOTER}
+  </div>
+</body>
+</html>`,
+  });
+}
+
+// Sent when a guest cancels a booking from their profile. If the booking
+// was paid, a refund request was filed automatically — the email tells them
+// how much the policy entitles them to and that it's pending admin review.
+export async function sendBookingCancelledEmail({
+  to, guestName, bookingNumber, refundRequested, refundAmount, rule,
+}: {
+  to: string; guestName: string; bookingNumber: string;
+  refundRequested: boolean; refundAmount?: number; rule?: string;
+}) {
+  const refundSection = !refundRequested
+    ? '<p>No payment had been made for this booking, so there is nothing to refund.</p>'
+    : rule === 'NONE'
+    ? '<p>Per our <strong>refund policy</strong>, cancellations at or after check-in are not eligible for a refund. If you believe this is in error, please contact us.</p>'
+    : `<p>A refund request has been submitted for
+        <strong>LKR ${(refundAmount ?? 0).toLocaleString()}</strong>${rule === 'PARTIAL' ? ' (a one-night charge applies per our refund policy)' : ''}.
+        Our team will review it and you'll receive another email once your refund has been processed.</p>`;
+
+  await sendEmail({
+    to,
+    subject: `Booking Cancelled — ${bookingNumber} | White Vintage Bungalow`,
+    html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
+  ${BRAND_HEADER}
+  <div style="background:#f9f9f9;padding:28px;border:1px solid #e0e0e0">
+    <h2 style="color:#2d6a4f;margin-top:0">Booking Cancelled</h2>
+    <p>Dear <strong>${guestName}</strong>,</p>
+    <p>Your booking <strong style="color:#2d6a4f">${bookingNumber}</strong> has been cancelled as requested.</p>
+    ${refundSection}
+    <p>We're sorry we won't be hosting you this time, and hope to welcome you to White Vintage Bungalow in the future.</p>
+    ${BRAND_FOOTER}
+  </div>
+</body>
+</html>`,
+  });
+}
+
+// Sent when an admin processes a guest's refund request — either approving
+// it (money on its way back) or declining it (with an optional note).
+export async function sendRefundProcessedEmail({
+  to, guestName, bookingNumber, amount, approved, adminNote,
+}: {
+  to: string; guestName: string; bookingNumber: string;
+  amount: number; approved: boolean; adminNote?: string;
+}) {
+  const body = approved
+    ? `<p>Your refund of <strong>LKR ${amount.toLocaleString()}</strong> for booking
+        <strong style="color:#2d6a4f">${bookingNumber}</strong> has been <strong>initiated</strong>.</p>
+       <p style="font-size:14px;color:#666">Card/online payments typically appear back in your account within
+        <strong>7–14 business days</strong>; bank transfers within <strong>5–7 business days</strong>.</p>`
+    : `<p>Unfortunately, your refund request for booking
+        <strong style="color:#2d6a4f">${bookingNumber}</strong> was <strong>declined</strong>.</p>
+       ${adminNote ? `<p style="font-size:14px;color:#666"><strong>Note from our team:</strong> ${adminNote}</p>` : ''}
+       <p style="font-size:14px;color:#666">If you have questions, please reply to this email or call us.</p>`;
+
+  await sendEmail({
+    to,
+    subject: `Refund ${approved ? 'Initiated' : 'Update'} — ${bookingNumber} | White Vintage Bungalow`,
+    html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
+  ${BRAND_HEADER}
+  <div style="background:#f9f9f9;padding:28px;border:1px solid #e0e0e0">
+    <h2 style="color:#2d6a4f;margin-top:0">Refund ${approved ? 'Initiated' : 'Request Update'}</h2>
+    <p>Dear <strong>${guestName}</strong>,</p>
+    ${body}
+    ${BRAND_FOOTER}
+  </div>
+</body>
+</html>`,
+  });
+}
+
 // Sends a one-off announcement/promo email (composed by an admin) to a
 // newsletter subscriber. `message` is HTML straight from the admin's rich
 // text editor (bold/color/highlight formatting) — it's embedded directly

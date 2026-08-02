@@ -215,7 +215,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           {/* Close button */}
           <Dialog.Close
             onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 transition"
+            className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition"
           >
             <X size={22} />
           </Dialog.Close>
@@ -224,7 +224,7 @@ export function AuthModal({ isOpen, onClose, defaultView = 'menu' }: AuthModalPr
           {view !== 'menu' && (
             <button
               onClick={() => { setView('menu'); setError(''); }}
-              className="absolute top-4 left-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 transition flex items-center gap-1 text-sm"
+              className="absolute top-4 left-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition flex items-center gap-1 text-sm"
             >
               <ChevronLeft size={18} /> Back
             </button>

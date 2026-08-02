@@ -35,9 +35,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import { cookies } from "next/headers";
 import { Providers } from "@/components/Providers";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ChatWidget from "@/components/ChatWidget";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 // RootLayout receives `children`, which is whatever page/nested layout is
 // currently being rendered. Every route in the app renders inside this shell.
@@ -46,6 +48,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the currency + market cookies set by middleware.ts (geo-detected or
+  // manually picked) server-side, so Providers starts with the right values
+  // on first paint instead of flashing the default then correcting itself.
+  const initialCurrency = cookies().get("nc_currency")?.value ?? DEFAULT_CURRENCY;
+  const initialMarket = cookies().get("nc_market")?.value ?? "FOREIGN";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -61,8 +69,8 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        {/* Providers supplies theme + auth session context to every page */}
-        <Providers>
+        {/* Providers supplies theme + currency + auth session context to every page */}
+        <Providers initialCurrency={initialCurrency} initialMarket={initialMarket}>
           {children}
         </Providers>
         {/* These two floating buttons appear on every page, always on top */}

@@ -10,7 +10,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 // actually provided are changed. If status is set to 'COMPLETED', the
 // completedAt timestamp is stamped automatically. Returns the updated task.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!requireAdmin(req)) {
+  if (!(await requireAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
