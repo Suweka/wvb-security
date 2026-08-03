@@ -21,8 +21,14 @@ interface CurrencyContextValue {
   // Local (Sri Lankan) vs. foreign guest pricing tier — deliberately
   // independent of `currency` (display choice) even though both are
   // geo-detected and both live in this same provider. See lib/currency.ts.
+  // Exposed as `'LOCAL'` whenever the admin has switched foreign pricing
+  // off site-wide (foreignPricingEnabled), regardless of what the guest's
+  // own cookie/pick says — see the `market` getter below.
   market: Market;
   setMarket: (market: Market) => void;
+  // Site-wide master switch (see /admin/pricing) — also drives whether
+  // MarketSwitcher is shown at all (Navbar.tsx).
+  foreignPricingEnabled: boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | undefined>(undefined);
@@ -46,6 +52,9 @@ export function CurrencyProvider({
     isMarket(initialMarket) ? initialMarket : 'FOREIGN'
   );
   const [rates, setRates] = useState<ExchangeRates>({});
+  // Defaults true (feature on) until the fetch below resolves — same
+  // flash-acceptance already applied to `rates` above.
+  const [foreignPricingEnabled, setForeignPricingEnabled] = useState(true);
 
   // Fetch the admin-set exchange rates once on mount. Public/no-auth
   // endpoint — same as any other published price on the site.
@@ -54,6 +63,19 @@ export function CurrencyProvider({
     fetch('/api/exchange-rates')
       .then(r => r.json())
       .then((data: ExchangeRates) => { if (!cancelled) setRates(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch the foreign-pricing master switch once on mount. Public/no-auth,
+  // same as the exchange rates fetch above.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/pricing-settings')
+      .then(r => r.json())
+      .then((data: { foreignPricingEnabled: boolean }) => {
+        if (!cancelled) setForeignPricingEnabled(data.foreignPricingEnabled);
+      })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -68,8 +90,13 @@ export function CurrencyProvider({
     document.cookie = `${MARKET_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
   };
 
+  // Force LOCAL whenever the admin has the feature switched off site-wide —
+  // the underlying `market`/cookie is left alone (setMarket still writes
+  // it), so a guest's prior pick is honored again if it's re-enabled.
+  const effectiveMarket: Market = foreignPricingEnabled ? market : 'LOCAL';
+
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, rates, market, setMarket }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, rates, market: effectiveMarket, setMarket, foreignPricingEnabled }}>
       {children}
     </CurrencyContext.Provider>
   );

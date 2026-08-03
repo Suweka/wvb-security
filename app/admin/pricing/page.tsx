@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle, RefreshCw, X, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, RefreshCw, X, Trash2, Globe } from 'lucide-react';
 import { getRoomsData } from '@/lib/admin-actions';
 import { StyledSelect } from '@/components/ui/StyledSelect';
 import { SUPPORTED_CURRENCIES, MARKETS, Market } from '@/lib/currency';
@@ -67,6 +67,39 @@ function PricingPageContent() {
   const [rateInputs, setRateInputs] = useState<Record<string, string>>({});
   const [savingRate, setSavingRate] = useState<string | null>(null);
   const [rateMsg, setRateMsg] = useState('');
+
+  // Site-wide master switch — when off, every guest sees local pricing and
+  // the Local/Foreign switcher is hidden (see components/CurrencyProvider.tsx,
+  // components/guest/Navbar.tsx, and the server-side check in
+  // app/api/bookings/route.ts). Toggling it here doesn't touch any of the
+  // foreign price data set below — just whether it's used.
+  const [foreignPricingEnabled, setForeignPricingEnabled] = useState(true);
+  const [savingToggle, setSavingToggle] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/admin/pricing-settings')
+      .then(res => res.json())
+      .then(data => { if (typeof data.foreignPricingEnabled === 'boolean') setForeignPricingEnabled(data.foreignPricingEnabled); })
+      .catch(() => {});
+  }, []);
+
+  async function handleToggleForeignPricing() {
+    const next = !foreignPricingEnabled;
+    setSavingToggle(true);
+    try {
+      const res = await fetch('/api/admin/pricing-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ foreignPricingEnabled: next }),
+      });
+      if (!res.ok) throw new Error();
+      setForeignPricingEnabled(next);
+    } catch {
+      setActionMsg('Failed to update the foreign pricing switch.');
+    } finally {
+      setSavingToggle(false);
+    }
+  }
 
   const fetchExchangeRates = useCallback(async () => {
     try {
@@ -263,6 +296,41 @@ function PricingPageContent() {
           {actionMsg}
         </div>
       )}
+
+      {/* Foreign pricing master switch — turns the whole local/foreign
+          differentiation off for guests site-wide without touching any of
+          the foreign price data set below. */}
+      <div className="glass-card hover-lift rounded-2xl p-6 mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center flex-shrink-0">
+            <Globe size={18} />
+          </div>
+          <div>
+            <h2 className="text-lg font-heading font-semibold">Foreign Guest Pricing</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md">
+              When off, every guest sees local pricing and the Local/Foreign switcher is hidden site-wide —
+              your foreign price calendar below is kept, not deleted.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleToggleForeignPricing}
+          disabled={savingToggle}
+          role="switch"
+          aria-checked={foreignPricingEnabled}
+          className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${
+            foreignPricingEnabled ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
+          }`}
+        >
+          <span
+            className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform flex items-center justify-center ${
+              foreignPricingEnabled ? 'translate-x-6' : 'translate-x-0'
+            }`}
+          >
+            {savingToggle && <Loader2 size={12} className="animate-spin text-primary" />}
+          </span>
+        </button>
+      </div>
 
       {/* Exchange Rates — used to auto-convert a room's LKR price into
           another currency wherever no explicit per-date price is set for

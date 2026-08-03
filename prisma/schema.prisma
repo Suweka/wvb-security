@@ -108,6 +108,11 @@ model GuestCheckout {
   lastName  String
   phone     String
   country   String?
+  // Collected in the booking form only when foreign-pricing is enabled
+  // (see /admin/pricing) — NIC for a LOCAL-market guest, passport for a
+  // FOREIGN-market one. Only one of the two is ever populated per booking.
+  nicNumber      String?
+  passportNumber String?
   bookings  Booking[]
   // If guest later registers, link their bookings
   claimedByUserId String?
@@ -303,6 +308,16 @@ model ExchangeRate {
   currency  String   @id
   rateToLKR Decimal  @db.Decimal(10, 4)
   updatedAt DateTime @updatedAt
+}
+
+// Site-wide singleton (always id: "global") for settings that don't belong
+// to any one room/currency. Currently just the foreign-pricing master
+// switch — see /admin/pricing and app/api/bookings/route.ts, the one place
+// this is actually enforced server-side (not just hiding the UI).
+model PricingSettings {
+  id                    String   @id @default("global")
+  foreignPricingEnabled Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
 }
 
 model RoomImage {

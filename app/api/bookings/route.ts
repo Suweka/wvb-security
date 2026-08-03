@@ -68,9 +68,25 @@ export async function POST(request: NextRequest) {
     // booking is always charged what the guest was actually quoted rather
     // than whatever a client claims. Missing entirely (e.g. an old/direct
     // API caller) defaults to LOCAL, the cheaper tier — never silently
-    // overcharge due to an absent signal.
+    // overcharge due to an absent signal. Also independently re-checks the
+    // site-wide foreign-pricing switch (/admin/pricing) so a guest with a
+    // stale nc_market=FOREIGN cookie from before the admin turned it off
+    // still gets charged LOCAL — the client's cookie is never trusted alone.
+    const pricingSettings = await prisma.pricingSettings.findUnique({ where: { id: 'global' } });
+    const foreignPricingEnabled = pricingSettings?.foreignPricingEnabled ?? true;
     const marketCookie = request.cookies.get('nc_market')?.value;
-    const market: Market = marketCookie && isMarket(marketCookie) ? marketCookie : 'LOCAL';
+    const market: Market = foreignPricingEnabled && marketCookie && isMarket(marketCookie) ? marketCookie : 'LOCAL';
+
+    // When foreign pricing is on, the guest details form collects an NIC
+    // (LOCAL) or passport number (FOREIGN) — enforced here too, not just as
+    // a UI gate, same as every other required guestDetails field below.
+    const idNumber = typeof guestDetails?.idNumber === 'string' ? guestDetails.idNumber.trim() : '';
+    if (foreignPricingEnabled && !idNumber) {
+      return NextResponse.json(
+        { error: market === 'LOCAL' ? 'NIC number is required.' : 'Passport number is required.' },
+        { status: 400 }
+      );
+    }
 
     // Link to logged-in user if a session exists
     // again — if there's no session, userId just ends up `null`.
@@ -127,6 +143,8 @@ export async function POST(request: NextRequest) {
         lastName:  guestDetails.lastName,
         phone:     guestDetails.phone,
         country:   guestDetails.country || null,
+        nicNumber:      foreignPricingEnabled && market === 'LOCAL' ? idNumber : null,
+        passportNumber: foreignPricingEnabled && market === 'FOREIGN' ? idNumber : null,
       },
     });
 

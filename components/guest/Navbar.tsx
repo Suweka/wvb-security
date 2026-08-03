@@ -15,11 +15,15 @@ import { AuthModal } from '@/components/guest/AuthModal'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { CurrencySwitcher } from '@/components/ui/CurrencySwitcher'
 import { MarketSwitcher } from '@/components/ui/MarketSwitcher'
+import { useCurrency } from '@/components/CurrencyProvider'
 
 export const Navbar = () => {
   // `session` is null when logged out, or an object with user info when
   // logged in. `status` is 'loading' | 'authenticated' | 'unauthenticated'.
   const { data: session, status } = useSession()
+  // Hides the Local/Foreign toggle entirely when the admin has switched
+  // foreign pricing off site-wide (see /admin/pricing).
+  const { foreignPricingEnabled } = useCurrency()
   // Mobile hamburger menu open/closed.
   const [isOpen, setIsOpen] = useState(false)
   // Whether the sign-in/register modal is open.
@@ -97,7 +101,7 @@ export const Navbar = () => {
                 </Link>
               ))}
 
-              <MarketSwitcher />
+              {foreignPricingEnabled && <MarketSwitcher />}
               <CurrencySwitcher />
               <ThemeToggle />
 
@@ -202,7 +206,7 @@ export const Navbar = () => {
 
             {/* Mobile: market + currency switcher + theme toggle + menu button */}
             <div className="flex items-center gap-2 md:hidden">
-              <MarketSwitcher />
+              {foreignPricingEnabled && <MarketSwitcher />}
               <CurrencySwitcher />
               <ThemeToggle />
               <button

@@ -220,12 +220,21 @@ export async function getReservationsData() {
       const email = b.user?.email || b.guestCheckout?.email || '';
       const phone = b.user?.phone || b.guestCheckout?.phone || '';
       const r = b.bankTransferReceipt;
+      // Only one of these is ever set per booking — see guestCheckout.create
+      // in app/api/bookings/route.ts. Absent entirely for bookings made
+      // while foreign pricing was switched off.
+      const idNumber = b.guestCheckout?.nicNumber
+        ? { type: 'NIC' as const, value: b.guestCheckout.nicNumber }
+        : b.guestCheckout?.passportNumber
+        ? { type: 'Passport' as const, value: b.guestCheckout.passportNumber }
+        : null;
 
       return {
         id: b.bookingNumber,
         guestName,
         email,
         phone,
+        idNumber,
         room: b.room.name,
         roomId: b.roomId,
         checkIn: b.checkIn.toISOString().split('T')[0],

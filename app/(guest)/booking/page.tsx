@@ -36,6 +36,7 @@ import {
   Phone,
   MapPin,
   CreditCard,
+  IdCard,
   Check,
   ChevronRight,
   ChevronLeft,
@@ -194,6 +195,11 @@ function BookingPageContent() {
     country: '',
     address: '',
     specialRequests: '',
+    // Only collected (and required) when foreign pricing is enabled — NIC
+    // for a LOCAL-market guest, passport number for a FOREIGN-market one.
+    // The server decides which column this maps to, based on its own
+    // market determination (see app/api/bookings/route.ts).
+    idNumber: '',
   });
 
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'helapay' | 'webxpay' | 'bank'>('card');
@@ -241,7 +247,7 @@ function BookingPageContent() {
   // calculateTotal()/calculateDisplayTotal() below close over `market`, and
   // `totals = calculateTotal()` is invoked further down in this same
   // component body — it must be initialized before that call runs.
-  const { currency: displayCurrency, market, rates } = useCurrency();
+  const { currency: displayCurrency, market, rates, foreignPricingEnabled } = useCurrency();
 
   // Real per-night rates for the selected rooms across the CURRENTLY
   // selected stay (fetched from /api/rooms/pricing whenever the room
@@ -517,9 +523,19 @@ function BookingPageContent() {
     setGuestDetails({ ...guestDetails, [e.target.name]: e.target.value });
   };
 
+  // Light format check for the ID field below — Sri Lankan NIC (old
+  // 9-digit + V/X, or new 12-digit) for a LOCAL guest, a generic 6-9 char
+  // alphanumeric passport number for a FOREIGN one. Only required at all
+  // when foreign pricing is switched on (see /admin/pricing).
+  const NIC_PATTERN = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+  const PASSPORT_PATTERN = /^[A-Za-z0-9]{6,9}$/;
+  const idNumberValid = !foreignPricingEnabled || (
+    market === 'LOCAL' ? NIC_PATTERN.test(guestDetails.idNumber.trim()) : PASSPORT_PATTERN.test(guestDetails.idNumber.trim())
+  );
+
   // Gate conditions used to enable/disable the "Continue" buttons between steps.
   const canProceedToDetails = checkInDate && checkOutDate && selectedRooms.length > 0;
-  const canProceedToPayment = guestDetails.firstName && guestDetails.lastName && guestDetails.email && guestDetails.phone;
+  const canProceedToPayment = guestDetails.firstName && guestDetails.lastName && guestDetails.email && guestDetails.phone && idNumberValid;
 
   // Runs when the guest clicks "Confirm Booking" on the payment step.
   // Two-stage flow:
@@ -981,6 +997,30 @@ function BookingPageContent() {
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+94 12 345 6789" />
                     </div>
                   </div>
+
+                  {/* Only shown when foreign pricing is switched on (see /admin/pricing) —
+                      NIC for a local (Sri Lankan) guest, passport number for a foreign one,
+                      matching the same `market` that already drives pricing. */}
+                  {foreignPricingEnabled && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {market === 'LOCAL' ? 'NIC Number *' : 'Passport Number *'}
+                      </label>
+                      <div className="relative">
+                        <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
+                        <input type="text" name="idNumber" value={guestDetails.idNumber} onChange={handleGuestDetailsChange} required
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder={market === 'LOCAL' ? '991234567V or 200012345678' : 'e.g. N1234567'} />
+                      </div>
+                      {guestDetails.idNumber && !idNumberValid && (
+                        <p className="text-xs text-red-600 mt-1">
+                          {market === 'LOCAL'
+                            ? 'Enter a valid NIC (9 digits + V/X, or 12 digits).'
+                            : 'Enter a valid passport number (6-9 letters/digits).'}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>

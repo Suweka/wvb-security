@@ -52,6 +52,7 @@ interface Reservation {
   guestName:     string;
   email:         string;
   phone:         string;
+  idNumber:      { type: 'NIC' | 'Passport'; value: string } | null;
   room:          string;
   roomId:        string;
   checkIn:       string;
@@ -639,6 +640,9 @@ function ReservationsContent() {
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guest</span><span className="font-medium">{viewDetail.guestName}</span></div>
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Email</span><span>{viewDetail.email}</span></div>
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Phone</span><span>{viewDetail.phone || '—'}</span></div>
+              {viewDetail.idNumber && (
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">{viewDetail.idNumber.type}</span><span>{viewDetail.idNumber.value}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Room</span><span>{viewDetail.room}</span></div>
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Guests</span><span>{viewDetail.guests}</span></div>
               <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Check-in</span><span>{viewDetail.checkIn}</span></div>
